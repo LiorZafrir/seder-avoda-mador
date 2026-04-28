@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כוננות ותגבורים</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a2233;min-height:100vh}
+
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1e40af,#2563eb);display:flex;align-items:center;justify-content:center;z-index:1000;transition:opacity .3s}
+.login-screen.hidden{opacity:0;pointer-events:none}
+.login-card{background:white;border-radius:20px;padding:36px 32px;width:90%;max-width:380px;box-shadow:0 24px 64px #0004;text-align:center}
+.login-card .logo{font-size:2.5rem;margin-bottom:8px}
+.login-card h2{font-size:1.3rem;font-weight:800;color:#1e40af;margin-bottom:4px}
+.login-card p{font-size:0.85rem;color:#94a3b8;margin-bottom:20px}
+.login-select{width:100%;border:2px solid #e2e8f0;border-radius:10px;padding:11px 14px;font-size:1rem;color:#1a2233;background:#f8fafc;font-family:inherit;margin-bottom:10px}
+.login-select:focus{outline:none;border-color:#2563eb}
+.pin-input{width:100%;border:2px solid #e2e8f0;border-radius:10px;padding:11px 14px;font-size:1.4rem;color:#1a2233;background:#f8fafc;font-family:inherit;margin-bottom:10px;text-align:center;letter-spacing:10px}
+.pin-input:focus{outline:none;border-color:#2563eb}
+.pin-hint{font-size:0.78rem;color:#94a3b8;margin-bottom:14px}
+.login-btn{width:100%;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:white;border:none;border-radius:10px;padding:13px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit}
+.login-err{color:#ef4444;font-size:0.85rem;margin-top:8px;display:none}
+.branch-badge-login{display:inline-block;background:#eff6ff;color:#2563eb;border-radius:20px;padding:4px 14px;font-size:0.82rem;font-weight:700;margin-bottom:14px}
+
+/* ── SETUP ── */
+.setup-step{display:none}
+.setup-step.active{display:block}
+.step-indicator{display:flex;gap:8px;justify-content:center;margin-bottom:24px}
+.step-dot{width:10px;height:10px;border-radius:50%;background:#e2e8f0;transition:.2s}
+.step-dot.active{background:#2563eb}
+.step-dot.done{background:#86efac}
+
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,#2563eb,#1e40af);color:white;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 16px #1e40af44}
+header h1{font-size:1.25rem;font-weight:700}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.user-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:0.8rem;font-weight:600;cursor:pointer}
+.user-badge:hover{background:rgba(255,255,255,0.3)}
+.branch-badge-header{background:rgba(255,255,255,0.15);border-radius:20px;padding:2px 10px;font-size:0.74rem;font-weight:600;color:rgba(255,255,255,0.9)}
+.sync-status{font-size:0.72rem;padding:3px 8px;border-radius:20px;font-weight:600}
+.sync-ok{background:rgba(34,197,94,0.2);color:#86efac}
+.sync-err{background:rgba(239,68,68,0.2);color:#fca5a5}
+.sync-loading{background:rgba(255,255,255,0.15);color:white}
+
+/* ── TABS ── */
+.tabs{display:flex;background:white;border-bottom:2px solid #e5e9f0;padding:0 14px;gap:1px;overflow-x:auto}
+.tab{padding:11px 14px;cursor:pointer;font-weight:600;font-size:0.85rem;color:#64748b;border-bottom:3px solid transparent;transition:all .2s;margin-bottom:-2px;white-space:nowrap;flex-shrink:0}
+.tab.active{color:#2563eb;border-bottom-color:#2563eb}
+.tab:hover:not(.active){color:#334155;background:#f8fafc}
+.tab.mgr-tab{color:#7c3aed}
+.tab.mgr-tab.active{color:#7c3aed;border-bottom-color:#7c3aed}
+.tab.super-tab{color:#dc2626}
+.tab.super-tab.active{color:#dc2626;border-bottom-color:#dc2626}
+
+/* ── LAYOUT ── */
+.container{max-width:1100px;margin:0 auto;padding:18px 14px}
+.card{background:white;border-radius:14px;box-shadow:0 2px 12px #0001;padding:22px 24px;margin-bottom:18px}
+.card h2{font-size:1rem;margin-bottom:14px;color:#1e40af;font-weight:700}
+.card h3{font-size:0.9rem;margin-bottom:10px;color:#475569;font-weight:700}
+.form-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;flex:1;min-width:130px}
+.form-group label{font-size:0.75rem;font-weight:700;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.form-group select,.form-group input,.form-group textarea{border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.9rem;color:#1a2233;background:#f8fafc;font-family:inherit;transition:border-color .2s}
+.form-group select:focus,.form-group input:focus,.form-group textarea:focus{outline:none;border-color:#2563eb;background:white}
+.form-group textarea{resize:vertical;min-height:60px}
+
+/* ── DAYS GRID ── */
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-bottom:18px}
+.day-card{border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 5px;background:#f8fafc;transition:all .2s}
+.day-card:hover{border-color:#93c5fd}
+.day-name{text-align:center;font-weight:800;font-size:0.78rem;color:#1e40af;margin-bottom:2px}
+.day-date{text-align:center;font-size:0.78rem;color:#475569;font-weight:600;margin-bottom:8px;background:#eff6ff;border-radius:5px;padding:2px 0;}
+.shift-section{margin-bottom:5px}
+.shift-label{font-size:0.65rem;font-weight:700;margin-bottom:2px;padding:2px 4px;border-radius:4px;display:inline-block}
+.sl-k{background:#dbeafe;color:#1d4ed8}.sl-t{background:#dcfce7;color:#15803d}
+.btn-group{display:flex;flex-direction:column;gap:2px}
+.sb{border:1.5px solid #e2e8f0;border-radius:5px;padding:4px 2px;font-size:0.63rem;font-weight:600;cursor:pointer;background:white;color:#64748b;transition:all .15s;text-align:center;font-family:inherit}
+.sb:hover{border-color:#93c5fd;color:#1d4ed8;background:#eff6ff}
+.sb.s1{background:#2563eb;color:white;border-color:#2563eb}
+.sb.s2{background:#7c3aed;color:white;border-color:#7c3aed}
+.sb.sno{background:#ef4444;color:white;border-color:#ef4444}
+.sb.st{background:#16a34a;color:white;border-color:#16a34a}
+
+/* ── BUTTONS ── */
+.btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:white;border:none;border-radius:9px;padding:10px 22px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.btn-secondary{background:white;border:1.5px solid #e2e8f0;border-radius:9px;padding:10px 14px;cursor:pointer;font-size:0.85rem;font-weight:600;color:#64748b;font-family:inherit}
+.btn-green{background:#16a34a;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:0.84rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-red{background:#ef4444;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:0.84rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-purple{background:#7c3aed;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:0.84rem;font-weight:700;cursor:pointer;font-family:inherit}
+.wa-btn{background:#25D366;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:0.84rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px}
+.wa-btn:hover{background:#128C7E}
+
+/* ── TABLE ── */
+.schedule-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.schedule-table th{background:#1e40af;color:white;padding:8px 5px;font-weight:700;font-size:0.72rem;text-align:center}
+.schedule-table td{padding:7px 5px;border:1px solid #e2e8f0;text-align:center;vertical-align:middle}
+.schedule-table tr:nth-child(4n+1) td,.schedule-table tr:nth-child(4n+2) td{background:#f8fafc}
+.person-cell{font-weight:700;font-size:0.84rem;border-right:4px solid #2563eb !important}
+.type-cell{font-size:0.68rem;color:#94a3b8;font-style:italic}
+.badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:0.66rem;font-weight:700;white-space:nowrap}
+.b1{background:#dbeafe;color:#1d4ed8}.b2{background:#ede9fe;color:#6d28d9}
+.bno{background:#fee2e2;color:#b91c1c}.bt{background:#dcfce7;color:#15803d}
+.be{background:#f1f5f9;color:#cbd5e1}
+.week-block{margin-bottom:22px}
+.week-title{background:#1e40af;color:white;border-radius:10px 10px 0 0;padding:9px 16px;font-weight:700;font-size:0.88rem;display:flex;align-items:center;justify-content:space-between}
+
+/* ── BRANCH CARDS ── */
+.branch-card{background:white;border-radius:12px;border:2px solid #e2e8f0;padding:16px 18px;margin-bottom:12px;transition:border-color .2s}
+.branch-card:hover{border-color:#93c5fd}
+.branch-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.branch-name{font-size:1rem;font-weight:800;color:#1e40af}
+.branch-meta{font-size:0.78rem;color:#64748b}
+.branch-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+/* ── EMP LIST ── */
+.emp-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.emp-chip{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:600;color:#1d4ed8;display:flex;align-items:center;gap:4px}
+.emp-chip .x{cursor:pointer;color:#94a3b8;font-size:0.9rem;background:none;border:none;padding:0;font-family:inherit}
+.emp-chip .x:hover{color:#ef4444}
+.mgr-chip{background:#f5f3ff;border-color:#c4b5fd;color:#6d28d9}
+
+/* ── MISC ── */
+.empty-state{text-align:center;padding:36px 16px;color:#94a3b8}
+.empty-state .icon{font-size:2.4rem;margin-bottom:8px}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .7s linear infinite;margin-left:5px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.summary-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{background:white;border-radius:10px;padding:8px 12px;box-shadow:0 1px 6px #0001;display:flex;align-items:center;gap:6px;font-size:0.8rem}
+.chip .num{font-size:1.1rem;font-weight:800;color:#2563eb}
+.chip .lbl{color:#64748b;font-weight:500}
+.submitted-banner{background:#f0fdf4;border:2px solid #86efac;border-radius:12px;padding:18px;text-align:center;margin-bottom:16px}
+.submitted-banner h3{color:#16a34a;font-size:1rem;font-weight:700;margin-bottom:4px}
+.history-item{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sub-status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-bottom:14px}
+.sub-done{background:#dcfce7;color:#15803d;border-radius:9px;padding:8px;text-align:center;font-size:0.82rem;font-weight:600}
+.sub-pending{background:#fee2e2;color:#b91c1c;border-radius:9px;padding:8px;text-align:center;font-size:0.82rem;font-weight:600}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1f5f9}
+.toggle-row:last-child{border-bottom:none}
+.toggle{position:relative;width:42px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#e2e8f0;border-radius:22px;cursor:pointer;transition:.3s}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:white;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:#25D366}
+.toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
+.modal-overlay{position:fixed;inset:0;background:#0006;display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:white;border-radius:16px;padding:24px;width:92%;max-width:420px;box-shadow:0 20px 60px #0003;transform:translateY(10px);transition:transform .2s}
+.modal-overlay.open .modal{transform:none}
+.modal h3{font-size:1rem;font-weight:700;color:#1e40af;margin-bottom:8px}
+.modal p{font-size:0.85rem;color:#64748b;margin-bottom:16px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.modal-btns button{border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;border:none}
+.btn-cancel-m{background:#f1f5f9;color:#475569}
+.btn-danger-m{background:#ef4444;color:white}
+.btn-ok-m{background:#2563eb;color:white}
+.loading-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1e40af,#2563eb);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;transition:opacity .4s}
+.loading-overlay.hidden{opacity:0;pointer-events:none}
+.loading-logo{font-size:3rem;margin-bottom:12px;animation:logoPulse 1.2s ease-in-out infinite}
+@keyframes logoPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.loading-text{color:white;font-size:1rem;font-weight:700;opacity:0.9}
+.loading-dots span{animation:dot 1.2s infinite;display:inline-block}
+.loading-dots span:nth-child(2){animation-delay:.2s}
+.loading-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);color:white;padding:11px 22px;border-radius:12px;font-weight:600;font-size:0.88rem;box-shadow:0 8px 24px #0002;transition:transform .3s;z-index:9999;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:700px){.days-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:460px){.days-grid{grid-template-columns:repeat(2,1fr)}.tab{padding:9px 10px;font-size:0.78rem}}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-logo">📋</div>
+  <div class="loading-text">טוען נתונים<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
+</div>
+
+<div class="login-screen" id="loginScreen" style="opacity:0;pointer-events:none;">
+  <div class="login-card">
+    <div class="logo">📋</div>
+    <h2>כוננות ותגבורים</h2>
+    <p>מערכת בקשות סידור עבודה</p>
+    <div id="branchBadgeLogin"></div>
+    <select class="login-select" id="loginBranch" onchange="onBranchSelect()">
+      <option value="">-- בחר שלוחה --</option>
+    </select>
+    <select class="login-select" id="loginName" onchange="onNameSelect()" style="display:none;">
+      <option value="">-- בחר שם --</option>
+    </select>
+    <div id="pinSection" style="display:none;">
+      <input type="password" class="pin-input" id="loginPin" placeholder="••••" maxlength="4" inputmode="numeric" onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="pin-hint">הכנס קוד PIN אישי</div>
+    </div>
+    <button class="login-btn" onclick="doLogin()">כניסה →</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div class="login-screen" id="setupScreen" style="display:none;">
+  <div class="login-card" style="max-width:440px;max-height:90vh;overflow-y:auto;">
+    <div class="logo">⚙️</div>
+    <h2>הגדרה ראשונית</h2>
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+    </div>
+
+    <!-- Step 1: Super admin -->
+    <div class="setup-step active" id="step1">
+      <p>שלב 1: הגדר מנהל כללי</p>
+      <div style="text-align:right;">
+        <label style="font-size:0.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">שם המנהל הכללי</label>
+        <input type="text" id="superName" placeholder="שם מלא" style="width:100%;border:2px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:0.95rem;font-family:inherit;margin-bottom:10px;">
+        <label style="font-size:0.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">PIN (4 ספרות, חובה)</label>
+        <input type="password" id="superPin" placeholder="••••" maxlength="4" inputmode="numeric" style="width:100%;border:2px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:1.2rem;font-family:inherit;text-align:center;letter-spacing:8px;margin-bottom:16px;">
+      </div>
+      <button class="login-btn" onclick="setupStep1()">הבא →</button>
+    </div>
+
+    <!-- Step 2: Branches -->
+    <div class="setup-step" id="step2">
+      <p>שלב 2: הגדר שלוחות</p>
+      <div style="text-align:right;">
+        <div id="branchSetupList" style="margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <input type="text" id="newBranchInput" placeholder="שם שלוחה חדשה" style="flex:1;border:2px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:0.9rem;font-family:inherit;" onkeydown="if(event.key==='Enter')addBranchSetup()">
+          <button onclick="addBranchSetup()" style="background:#2563eb;color:white;border:none;border-radius:9px;padding:9px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.88rem;">+ הוסף</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="login-btn" style="background:#e2e8f0;color:#475569;" onclick="setupGoTo(1)">← חזור</button>
+        <button class="login-btn" onclick="setupStep2()">הבא →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Employees per branch -->
+    <div class="setup-step" id="step3">
+      <p>שלב 3: הוסף עובדים לשלוחות</p>
+      <div id="branchEmpSetup" style="text-align:right;margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="login-btn" style="background:#e2e8f0;color:#475569;" onclick="setupGoTo(2)">← חזור</button>
+        <button class="login-btn" onclick="finishSetup()">סיום ✓</button>
+      </div>
+    </div>
+    <div class="login-err" id="setupErr"></div>
+  </div>
+</div>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div>
+    <h1>📋 כוננות ותגבורים</h1>
+    <div class="branch-badge-header" id="branchBadgeHeader"></div>
+  </div>
+  <div class="header-right">
+    <div class="user-badge" onclick="logout()" id="userBadge">👤 —</div>
+    <div id="syncStatus" class="sync-status sync-loading">⏳ מתחבר...</div>
+  </div>
+</header>
+
+<div class="tabs" id="tabsBar">
+  <div class="tab active" onclick="switchTab('form')" id="tab-btn-form">📝 הגשת בקשה</div>
+  <div class="tab" onclick="switchTab('current')" id="tab-btn-current">📅 השבוע</div>
+  <div class="tab" onclick="switchTab('archive')" id="tab-btn-archive">🗂️ ארכיון</div>
+  <div class="tab" onclick="switchTab('history')" id="tab-btn-history">📜 ההיסטוריה שלי</div>
+  <div class="tab" onclick="switchTab('pin')" id="tab-btn-pin">🔐 קוד PIN</div>
+  <div class="tab mgr-tab" onclick="switchTab('manager')" id="tab-btn-manager" style="display:none;">⚙️ ניהול שלוחה</div>
+  <div class="tab super-tab" onclick="switchTab('super')" id="tab-btn-super" style="display:none;">👑 ניהול כללי</div>
+</div>
+
+<!-- ══ FORM TAB ══ -->
+<div id="tab-form" class="container">
+  <div class="card">
+    <h2>📝 הגשת בקשה לשבוע</h2>
+    <div id="submittedBanner" class="submitted-banner" style="display:none;">
+      <div style="font-size:1.8rem;margin-bottom:6px;">✅</div>
+      <h3>הבקשה הוגשה!</h3>
+      <p id="submittedText" style="font-size:0.85rem;color:#64748b;"></p>
+      <p style="margin-top:6px;color:#ef4444;font-size:0.8rem;font-weight:600;">לשינוי יש לפנות למנהל השלוחה</p>
+    </div>
+    <div id="formContent">
+      <div class="form-row">
+        <div class="form-group">
+          <label>שבוע</label>
+          <select id="weekSelect"></select>
+        </div>
+      </div>
+      <div id="daysGrid" class="days-grid"></div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>הערות</label>
+        <textarea id="notes" placeholder="הוסף הערות אם יש..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn-primary" id="submitBtn" onclick="submitRequest()"><span>✅</span> הגש בקשה</button>
+        <button class="btn-secondary" onclick="clearForm()">🗑️ נקה</button>
+        <button class="btn-secondary" id="applyTmplBtn" onclick="applyTemplate()" style="display:none;">⭐ טען תבנית</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PIN TAB ══ -->
+<div id="tab-pin" class="container" style="display:none;">
+  <div class="card">
+    <h2>🔐 קוד PIN אישי</h2>
+    <p style="font-size:0.86rem;color:#64748b;margin-bottom:16px;">קוד PIN מונע מאחרים להתחבר בשמך. אופציונלי לחלוטין.</p>
+    <div id="pinCurrentStatus" style="margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="form-group" style="max-width:160px;">
+        <label>קוד PIN חדש</label>
+        <input type="password" id="selfPinInput" maxlength="4" inputmode="numeric" placeholder="••••" style="letter-spacing:6px;text-align:center;font-size:1.1rem;">
+      </div>
+      <div class="form-group" style="max-width:160px;">
+        <label>אימות קוד</label>
+        <input type="password" id="selfPinConfirm" maxlength="4" inputmode="numeric" placeholder="••••" style="letter-spacing:6px;text-align:center;font-size:1.1rem;">
+      </div>
+      <button class="btn-primary" style="padding:10px 20px;" onclick="saveSelfPin()">💾 שמור קוד</button>
+      <button id="removeSelfPinBtn" class="btn-secondary" onclick="removeSelfPin()" style="display:none;">🔓 הסר קוד</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CURRENT WEEK ══ -->
+<div id="tab-current" class="container" style="display:none;">
+  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
+    <button class="btn-secondary" style="font-size:0.82rem;padding:7px 12px;" onclick="loadFromSheet()">🔄 רענן</button>
+    <button class="wa-btn" style="font-size:0.82rem;padding:7px 12px;" onclick="exportTableAsImage()">📸 ייצא תמונה</button>
+    <button class="btn-secondary" style="font-size:0.82rem;padding:7px 12px;background:#16783a;color:white;border-color:#16783a;" onclick="exportCurrentWeekExcel()">📊 Excel</button>
+    <span id="currentWeekLabel" style="font-size:0.86rem;color:#64748b;font-weight:600;margin-right:auto;"></span>
+  </div>
+  <div id="summaryBarCurrent" class="summary-bar"></div>
+  <div id="currentWeekArea"></div>
+</div>
+
+<!-- ══ ARCHIVE ══ -->
+<div id="tab-archive" class="container" style="display:none;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+    <label style="font-size:0.82rem;font-weight:600;color:#64748b;">שנה:</label>
+    <select id="filterYear" onchange="renderArchive()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.83rem;background:white;font-family:inherit;">
+      <option value="">הכל</option>
+    </select>
+    <button class="btn-secondary" style="font-size:0.82rem;padding:7px 12px;background:#16783a;color:white;border-color:#16783a;" onclick="exportArchiveExcel()">📊 Excel</button>
+    <button class="btn-secondary" style="font-size:0.82rem;padding:7px 12px;" onclick="exportCSV()">⬇️ CSV</button>
+  </div>
+  <div id="summaryBarArchive" class="summary-bar"></div>
+  <div id="archiveArea"></div>
+</div>
+
+<!-- ══ HISTORY ══ -->
+<div id="tab-history" class="container" style="display:none;">
+  <div class="card">
+    <h2>📜 ההיסטוריה שלי</h2>
+    <p style="font-size:0.86rem;color:#64748b;margin-bottom:16px;">כל הבקשות שהגשת בעבר. ניתן להשתמש בבקשה קודמת כתבנית.</p>
+    <div id="historyList"></div>
+  </div>
+  <div class="card">
+    <h2>⭐ תבנית אישית קבועה</h2>
+    <p style="font-size:0.86rem;color:#64748b;margin-bottom:16px;">
+      הגדר ברירת מחדל לכל יום בשבוע. ימים שלא הוגדרו יישארו ריקים להשלמה ידנית.
+    </p>
+    <div id="templateEditor"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+      <button class="submit-btn" style="padding:10px 18px;font-size:0.88rem;" onclick="saveWeekdayTemplate()">💾 שמור תבנית</button>
+      <button class="btn-secondary" onclick="clearTemplate()">🗑️ מחק תבנית</button>
+    </div>
+    <div id="templateDisplay"></div>
+  </div>
+</div>
+
+<!-- ══ MANAGER TAB (branch manager) ══ -->
+<div id="tab-manager" class="container" style="display:none;">
+  <!-- Submission status -->
+  <div class="card">
+    <h2>📊 סטטוס הגשות לשבוע הבא</h2>
+    <div id="submissionStatusGrid" class="sub-status-grid"></div>
+    <button class="wa-btn" onclick="sendReminderToMissing()">📲 שלח תזכורת למי שלא הגיש</button>
+  </div>
+  <!-- Employees in branch -->
+  <div class="card">
+    <h2>👥 עובדי השלוחה</h2>
+    <div id="branchEmpList" class="emp-chips"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      <select id="addEmpToBranchSelect" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.85rem;background:white;font-family:inherit;flex:1;"></select>
+      <button class="btn-green" onclick="addEmpToBranch()">+ הוסף</button>
+    </div>
+  </div>
+  <!-- Employee PINs -->
+  <div class="card">
+    <h2>🔐 קודי PIN לעובדים</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:0.86rem;">
+      <thead><tr style="background:#f1f5f9;">
+        <th style="padding:8px;text-align:right;font-weight:700;color:#475569;">שם</th>
+        <th style="padding:8px;text-align:center;font-weight:700;color:#475569;">קוד PIN</th>
+        <th style="padding:8px;text-align:center;font-weight:700;color:#475569;">פעולות</th>
+      </tr></thead>
+      <tbody id="empPinTable"></tbody>
+    </table>
+  </div>
+  <!-- Unlock -->
+  <div class="card">
+    <h2>🔓 ביטול נעילת בקשה</h2>
+    <p style="font-size:0.84rem;color:#64748b;margin-bottom:14px;">הבקשה האחרונה של העובד תיפתח לעריכה.</p>
+    <div class="form-row">
+      <div class="form-group" id="unlockBranchGroup" style="display:none;">
+        <label>שלוחה</label>
+        <select id="unlockBranch" onchange="onUnlockBranchChange()"></select>
+      </div>
+      <div class="form-group">
+        <label>עובד</label>
+        <select id="unlockEmp"></select>
+      </div>
+    </div>
+    <button class="btn-purple" onclick="unlockRequest()">🔓 בטל נעילה</button>
+  </div>
+  <!-- WhatsApp settings -->
+  <div class="card">
+    <h2>📲 הגדרות WhatsApp</h2>
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div class="toggle-row">
+        <div><label style="font-size:0.86rem;font-weight:600;">התראה למנהל על הגשה</label></div>
+        <label class="toggle"><input type="checkbox" id="notifyManagerToggle" onchange="saveWaSettings()"><span class="toggle-slider"></span></label>
+      </div>
+      <div style="margin-top:8px;">
+        <input type="tel" id="managerPhone" placeholder="מספר טלפון מנהל" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.88rem;font-family:inherit;width:100%;max-width:200px;" onblur="saveWaSettings()">
+      </div>
+    </div>
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div class="toggle-row">
+        <div><label style="font-size:0.86rem;font-weight:600;">תזכורת אוטומטית לעובדים</label></div>
+        <label class="toggle"><input type="checkbox" id="autoReminderToggle" onchange="saveWaSettings();toggleReminderSchedule()"><span class="toggle-slider"></span></label>
+      </div>
+      <div id="reminderSchedule" style="display:none;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <label style="font-size:0.8rem;font-weight:600;color:#64748b;">יום:</label>
+        <select id="reminderDay" onchange="saveWaSettings()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:5px 8px;font-size:0.83rem;font-family:inherit;">
+          <option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option>
+          <option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option>
+        </select>
+        <label style="font-size:0.8rem;font-weight:600;color:#64748b;">שעה:</label>
+        <input type="time" id="reminderTime" value="09:00" onchange="saveWaSettings()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:5px 8px;font-size:0.83rem;font-family:inherit;">
+      </div>
+    </div>
+    <button class="wa-btn" onclick="sendManualReminder()">📲 שלח תזכורת עכשיו</button>
+    <button class="wa-btn" style="margin-right:8px;background:#7c3aed;" onclick="exportTableAsImage()">📸 ייצא תמונה</button>
+  </div>
+</div>
+
+<!-- ══ SUPER ADMIN TAB ══ -->
+<div id="tab-super" class="container" style="display:none;">
+  <!-- Branches management -->
+  <div class="card">
+    <h2>🏢 ניהול שלוחות</h2>
+    <div id="branchesList"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <input type="text" id="newBranchName" placeholder="שם שלוחה חדשה" style="flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:0.9rem;font-family:inherit;">
+      <button class="btn-green" onclick="addBranch()">+ הוסף שלוחה</button>
+    </div>
+  </div>
+  <!-- Global employees (unassigned) -->
+  <div class="card">
+    <h2>👥 עובדים חדשים / לא משויכים</h2>
+    <div id="unassignedEmps" class="emp-chips" style="margin-bottom:12px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input type="text" id="newEmpNameSuper" placeholder="שם עובד חדש" style="flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:0.9rem;font-family:inherit;">
+      <input type="text" id="newEmpPinSuper" placeholder="PIN (אופציונלי)" maxlength="4" inputmode="numeric" style="max-width:140px;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:0.9rem;font-family:inherit;">
+      <button class="btn-green" onclick="addEmployeeSuper()">+ הוסף</button>
+    </div>
+  </div>
+  <!-- Super admins -->
+  <div class="card">
+    <h2>👑 מנהלים כלליים</h2>
+    <div id="superAdminList" class="emp-chips" style="margin-bottom:12px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <select id="newSuperSelect" style="flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:0.9rem;font-family:inherit;"></select>
+      <input type="password" id="newSuperPin" placeholder="PIN (4 ספרות)" maxlength="4" inputmode="numeric" style="max-width:140px;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:0.9rem;font-family:inherit;">
+      <button class="btn-green" onclick="addSuperAdmin()">+ הוסף</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle"></h3>
+    <p id="modalMsg"></p>
+    <div id="modalExtra"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel-m" onclick="closeModal()">ביטול</button>
+      <button id="modalConfirm" class="btn-ok-m">אישור</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWt0WS-VxnovqgGuOJhB6lXNDkTnKCEyVsDY4Xk-55Zuz_DoEkgLjm4kWlbduANZoi/exec';
+const DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+
+// ── DATA STRUCTURE ────────────────────────────────────────
+// branches: [{id, name, managerNames:[], employeeNames:[]}]
+// employees: [{name, pin}]
+// superAdmins: [{name, pin}]
+// requests: [{id, name, branchId, weekStart, days, notes, submittedAt}]
+// lockedRequests: {name_weekStart: true}
+// waSettings: {branchId: {notifyManager, managerPhone, autoReminder, reminderDay, reminderTime}}
+// templates: {name: {days, notes}}
+
+let branches = [];
+let employees = [];
+let superAdmins = [];
+let requests = [];
+let lockedRequests = {};
+let waSettings = {};
+let templates = {};
+
+let currentUser = null; // {name, branchId, role: 'employee'|'branchManager'|'superAdmin'}
+let currentTab = 'form';
+let fd = {};
+let tmplEdit = Array.from({length:7}, (_,i) => ({day:i, konenut:null, tigbur:false}));
+let reminderTimer = null;
+let isEditingBranches = false; // prevent auto-refresh from overwriting branch list
+
+// ── HELPERS ───────────────────────────────────────────────
+function p2(n){return String(n).padStart(2,'0')}
+function fmtD(d){return `${p2(d.getDate())}/${p2(d.getMonth()+1)}`}
+function fmtWeekLabel(ws){
+  const [y,m,d]=ws.split('-').map(Number);
+  const s=new Date(y,m-1,d),e=new Date(y,m-1,d+6);
+  return `${fmtD(s)} – ${fmtD(e)} / ${e.getFullYear()}`;
+}
+function getNextSunday(offset=0){
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const dayOfWeek=today.getDay();
+  const daysUntilSunday=dayOfWeek===0?7:(7-dayOfWeek);
+  const result=new Date(today);
+  result.setDate(today.getDate()+daysUntilSunday+(offset*7));
+  return result;
+}
+function weekKey(date){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function getCurrentWeekStart(){
+  const d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-d.getDay());return weekKey(d);
+}
+function getNextWeekStart(){return weekKey(getNextSunday(0));}
+function getBranch(id){return branches.find(b=>b.id===id)}
+function getEmp(name){return employees.find(e=>e.name===name)}
+function getBranchOfUser(name){return branches.find(b=>b.employeeNames.includes(name))}
+function isBranchManager(name,branchId){return getBranch(branchId)?.managerNames.includes(name)}
+
+function buildWeekOptions(){
+  const opts=[];
+  for(let i=0;i<8;i++){
+    const s=getNextSunday(i),e=new Date(s);e.setDate(e.getDate()+6);
+    opts.push({value:weekKey(s),label:`${fmtD(s)} – ${fmtD(e)} / ${e.getFullYear()}`});
+  }
+  return opts;
+}
+
+// ── SYNC ─────────────────────────────────────────────────
+async function loadFromSheet(){
+  setSyncStatus('loading');
+  try{
+    const res=await fetch(`${APPS_SCRIPT_URL}?t=${Date.now()}`,{redirect:'follow'});
+    const text=await res.text();
+    const idx=text.indexOf('{');
+    const data=JSON.parse(idx>=0?text.slice(idx):'{}');
+    branches=data.branches||[];
+    employees=data.employees||[];
+    superAdmins=data.superAdmins||[];
+    requests=data.requests||[];
+    lockedRequests=data.lockedRequests||{};
+    waSettings=data.waSettings||{};
+    templates=data.templates||{};
+    populateLoginBranches();
+    if(currentUser){
+      refreshAfterLoad();
+    }
+    setSyncStatus('ok');
+    if(!superAdmins.length) showSetupScreen();
+  }catch(e){setSyncStatus('error');showToast('⚠️ שגיאה בטעינה',true)}
+}
+
+async function saveToSheet(){
+  setSyncStatus('loading');
+  try{
+    const payload=JSON.stringify({branches,employees,superAdmins,requests,lockedRequests,waSettings,templates});
+    await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload,redirect:'follow'});
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('error');showToast('⚠️ שגיאה בשמירה',true)}
+}
+
+function setSyncStatus(s){
+  const el=document.getElementById('syncStatus');
+  if(s==='ok'){el.className='sync-status sync-ok';el.textContent='✅ מסונכרן'}
+  else if(s==='error'){el.className='sync-status sync-err';el.textContent='❌ שגיאה'}
+  else{el.className='sync-status sync-loading';el.textContent='⏳ מסנכרן...'}
+}
+
+function refreshAfterLoad(){
+  checkSubmittedStatus();
+  if(currentTab==='current')renderCurrentWeek();
+  if(currentTab==='archive')renderArchive();
+  if(currentTab==='history')renderHistory();
+  if(currentTab==='manager')renderBranchManagerTab();
+  if(currentTab==='super'&&!isEditingBranches)renderSuperTab(); // don't overwrite while editing
+  renderSubmissionStatus();
+  renderSelfPinStatus();
+}
+
+// ── SETUP ─────────────────────────────────────────────────
+let setupBranches=[];
+let setupStep=1;
+
+function showSetupScreen(){
+  const login=document.getElementById('loginScreen');
+  login.style.opacity='0';login.style.pointerEvents='none';login.style.display='none';
+  document.getElementById('setupScreen').style.display='flex';
+  renderBranchSetupList();
+}
+
+function setupGoTo(n){
+  setupStep=n;
+  document.querySelectorAll('.setup-step').forEach((s,i)=>s.classList.toggle('active',i===n-1));
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{
+    d.classList.toggle('active',i===n-1);
+    d.classList.toggle('done',i<n-1);
+  });
+  document.getElementById('setupErr').style.display='none';
+}
+
+function setupStep1(){
+  const name=document.getElementById('superName').value.trim();
+  const pin=document.getElementById('superPin').value.trim();
+  if(!name){showSetupErr('הכנס שם מנהל');return}
+  if(!pin||pin.length!==4||!/^\d+$/.test(pin)){showSetupErr('PIN חייב להיות 4 ספרות');return}
+  setupGoTo(2);
+  renderBranchSetupList();
+}
+
+function setupStep2(){
+  if(!setupBranches.length){showSetupErr('הוסף לפחות שלוחה אחת');return}
+  setupGoTo(3);
+  renderBranchEmpSetup();
+}
+
+function addBranchSetup(){
+  const inp=document.getElementById('newBranchInput');
+  const name=inp.value.trim();
+  if(!name)return;
+  if(setupBranches.find(b=>b.name===name)){showSetupErr('שלוחה זו כבר קיימת');return}
+  setupBranches.push({name,emps:''});
+  inp.value='';
+  renderBranchSetupList();
+}
+
+function renderBranchSetupList(){
+  document.getElementById('branchSetupList').innerHTML=setupBranches.map((b,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span style="background:#eff6ff;color:#2563eb;border-radius:8px;padding:4px 12px;font-weight:700;font-size:0.88rem;flex:1;">${b.name}</span>
+      <button onclick="setupBranches.splice(${i},1);renderBranchSetupList()" style="background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit;font-size:0.8rem;">✕</button>
+    </div>`).join('')||'<p style="color:#94a3b8;font-size:0.84rem;">עוד לא נוספו שלוחות</p>';
+}
+
+function renderBranchEmpSetup(){
+  document.getElementById('branchEmpSetup').innerHTML=setupBranches.map((b,i)=>`
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:700;color:#1e40af;margin-bottom:6px;">🏢 ${b.name}</div>
+      <textarea placeholder="שמות עובדים, אחד בכל שורה" style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px;font-size:0.85rem;font-family:inherit;min-height:80px;resize:vertical;" oninput="setupBranches[${i}].emps=this.value">${b.emps||''}</textarea>
+    </div>`).join('');
+}
+
+async function finishSetup(){
+  const name=document.getElementById('superName').value.trim();
+  const pin=document.getElementById('superPin').value.trim();
+  superAdmins=[{name,pin}];
+  // Build branches and employees
+  branches=[];employees=[];
+  setupBranches.forEach((b,idx)=>{
+    const id='branch_'+idx;
+    const empNames=b.emps.split('\n').map(s=>s.trim()).filter(Boolean);
+    empNames.forEach(n=>{if(!employees.find(e=>e.name===n))employees.push({name:n,pin:''})});
+    branches.push({id,name:b.name,managerNames:[],employeeNames:empNames});
+  });
+  // Add super admin as employee if not exists
+  if(!employees.find(e=>e.name===name)) employees.push({name,pin});
+  else { const e=employees.find(e=>e.name===name); e.pin=pin; }
+  await saveToSheet();
+  document.getElementById('setupScreen').style.display='none';
+  const loginEl=document.getElementById('loginScreen');
+  loginEl.style.display='flex';loginEl.style.opacity='1';loginEl.style.pointerEvents='';
+  populateLoginBranches();
+  showToast('✅ המערכת הוגדרה בהצלחה!');
+}
+
+function showSetupErr(msg){const el=document.getElementById('setupErr');el.textContent=msg;el.style.display='block'}
+
+// ── LOGIN ─────────────────────────────────────────────────
+function populateLoginBranches(){
+  const sel=document.getElementById('loginBranch');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- בחר שלוחה --</option>'+
+    branches.map(b=>`<option value="${b.id}"${b.id===cur?' selected':''}>${b.name}</option>`).join('');
+  // Also add super admin option
+  if(superAdmins.length){
+    sel.innerHTML+='<option value="__super__">מנהל כללי</option>';
+  }
+}
+
+function onBranchSelect(){
+  const branchId=document.getElementById('loginBranch').value;
+  const nameSel=document.getElementById('loginName');
+  const pinSec=document.getElementById('pinSection');
+  nameSel.style.display='none';
+  pinSec.style.display='none';
+  document.getElementById('loginErr').style.display='none';
+  if(!branchId)return;
+  let names=[];
+  if(branchId==='__super__'){
+    names=superAdmins.map(s=>s.name);
+  } else {
+    const branch=getBranch(branchId);
+    if(!branch)return;
+    names=branch.employeeNames;
+  }
+  nameSel.innerHTML='<option value="">-- בחר שם --</option>'+names.map(n=>`<option>${n}</option>`).join('');
+  nameSel.style.display='';
+}
+
+function onNameSelect(){
+  const name=document.getElementById('loginName').value;
+  const branchId=document.getElementById('loginBranch').value;
+  const pinSec=document.getElementById('pinSection');
+  document.getElementById('loginPin').value='';
+  document.getElementById('loginErr').style.display='none';
+  if(!name){pinSec.style.display='none';return}
+  let emp;
+  if(branchId==='__super__') emp=superAdmins.find(s=>s.name===name);
+  else emp=getEmp(name);
+  if(emp&&emp.pin&&emp.pin.length===4){
+    pinSec.style.display='block';
+    setTimeout(()=>document.getElementById('loginPin').focus(),50);
+  } else {
+    pinSec.style.display='none';
+  }
+}
+
+function doLogin(){
+  const branchId=document.getElementById('loginBranch').value;
+  const name=document.getElementById('loginName').value;
+  if(!branchId){showLoginErr('בחר שלוחה');return}
+  if(!name){showLoginErr('בחר שם');return}
+  let emp, role, userBranchId;
+  if(branchId==='__super__'){
+    emp=superAdmins.find(s=>s.name===name);
+    role='superAdmin';
+    userBranchId=null;
+  } else {
+    emp=getEmp(name);
+    const branch=getBranch(branchId);
+    userBranchId=branchId;
+    role=branch?.managerNames.includes(name)?'branchManager':'employee';
+  }
+  if(!emp){showLoginErr('משתמש לא נמצא');return}
+  if(emp.pin&&emp.pin.length===4){
+    const pin=document.getElementById('loginPin').value;
+    if(pin!==emp.pin){showLoginErr('קוד שגוי');return}
+  }
+  currentUser={name,branchId:userBranchId,role};
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('userBadge').textContent=`👤 ${name}`;
+  const branchName=userBranchId?getBranch(userBranchId)?.name:'';
+  document.getElementById('branchBadgeHeader').textContent=
+    role==='superAdmin'?'👑 מנהל כללי':branchName?`🏢 ${branchName}`:'';
+  // Show tabs based on role
+  document.getElementById('tab-btn-manager').style.display=
+    (role==='branchManager'||role==='superAdmin')?'':'none';
+  document.getElementById('tab-btn-super').style.display=
+    role==='superAdmin'?'':'none';
+  buildWeekSelect();
+  checkSubmittedStatus();
+  renderCurrentWeek();
+  renderSelfPinStatus();
+  renderSubmissionStatus();
+  if(templates[name]) document.getElementById('applyTmplBtn').style.display='';
+  setInterval(loadFromSheet,30000);
+  scheduleAutoReminder();
+}
+
+function showLoginErr(msg){const el=document.getElementById('loginErr');el.textContent=msg;el.style.display='block'}
+function logout(){
+  currentUser=null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginPin').value='';
+  document.getElementById('pinSection').style.display='none';
+  document.getElementById('loginName').style.display='none';
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('loginBranch').value='';
+}
+
+// ── WEEK SELECT ───────────────────────────────────────────
+function buildWeekSelect(){
+  const sel=document.getElementById('weekSelect');
+  sel.innerHTML=buildWeekOptions().map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
+  sel.value=getNextWeekStart();
+  sel.onchange=()=>{buildGrid();checkSubmittedStatus();updateWeekSummaryLabel();updateWeekSummary()};
+  buildGrid();
+  updateWeekSummary();
+  if(currentUser&&templates[currentUser.name]){
+    const ws=sel.value;
+    if(!lockedRequests[`${currentUser.name}_${ws}`]) setTimeout(applyTemplate,50);
+  }
+}
+
+// ── FORM ─────────────────────────────────────────────────
+function updateWeekSummary(){
+  const ws=document.getElementById('weekSelect')?.value;
+  if(!ws)return;
+  const s=new Date(ws),e=new Date(ws);e.setDate(e.getDate()+6);
+  let el=document.getElementById('weekSummaryLabel');
+  if(!el){
+    el=document.createElement('div');
+    el.id='weekSummaryLabel';
+    el.style.cssText='background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:0.88rem;font-weight:700;color:#1e40af;margin-bottom:14px;text-align:center;';
+    const grid=document.getElementById('daysGrid');
+    if(grid)grid.parentNode.insertBefore(el,grid);
+  }
+  el.textContent=`📅 ${DAYS[0]} ${p2(s.getDate())}/${p2(s.getMonth()+1)} – ${DAYS[6]} ${p2(e.getDate())}/${p2(e.getMonth()+1)}/${e.getFullYear()}`;
+}
+
+function buildGrid(){
+  fd={};
+  const ws=document.getElementById('weekSelect')?.value;
+  if(!ws)return;
+  const g=document.getElementById('daysGrid');g.innerHTML='';
+  for(let i=0;i<7;i++){
+    const [wy,wm,wd]=ws.split('-').map(Number);
+    const day=new Date(wy,wm-1,wd+i);
+    fd[i]={konenut:null,tigbur:false};
+    const c=document.createElement('div');c.className='day-card';
+    c.innerHTML=`<div class="day-name">${DAYS[i]}</div><div class="day-date">${p2(day.getDate())}/${p2(day.getMonth()+1)}</div>
+      <div class="shift-section"><div class="shift-label sl-k">כוננות</div>
+        <div class="btn-group">
+          <button class="sb" onclick="setK(${i},1,this)">כונן</button>
+          <button class="sb" onclick="setK(${i},2,this)">רק כונן 2</button>
+          <button class="sb" onclick="setK(${i},'no',this)">לא כונן</button>
+        </div></div>
+      <div class="shift-section" style="margin-top:5px;"><div class="shift-label sl-t">תגבור</div>
+        <div class="btn-group"><button class="sb" id="tg${i}" onclick="togT(${i},this)">אפשרי</button></div>
+      </div>`;
+    g.appendChild(c);
+  }
+}
+
+function setK(i,v,btn){
+  fd[i].konenut=v;
+  btn.closest('.btn-group').querySelectorAll('.sb').forEach(b=>b.className='sb');
+  btn.classList.add(v===1?'s1':v===2?'s2':'sno');
+  btn.closest('.day-card').style.borderColor='';btn.closest('.day-card').style.boxShadow='';
+}
+function togT(i,btn){
+  fd[i].tigbur=!fd[i].tigbur;
+  btn.className='sb'+(fd[i].tigbur?' st':'');
+  btn.textContent=fd[i].tigbur?'✓ אפשרי':'אפשרי';
+}
+
+function checkSubmittedStatus(){
+  if(!currentUser)return;
+  const ws=document.getElementById('weekSelect')?.value;if(!ws)return;
+  const isLocked=lockedRequests[`${currentUser.name}_${ws}`];
+  const req=requests.find(r=>r.name===currentUser.name&&r.weekStart===ws);
+  const banner=document.getElementById('submittedBanner');
+  const form=document.getElementById('formContent');
+  if(req&&isLocked){
+    banner.style.display='block';form.style.display='none';
+    const s=new Date(ws),e=new Date(ws);e.setDate(e.getDate()+6);
+    document.getElementById('submittedText').textContent=`שבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}`;
+  } else {banner.style.display='none';form.style.display='';}
+}
+
+async function submitRequest(){
+  if(!currentUser)return;
+  const ws=document.getElementById('weekSelect').value;
+  const missing=[];
+  for(let i=0;i<7;i++){if(fd[i].konenut===null)missing.push(DAYS[i])}
+  if(missing.length){
+    showToast('❗ חסרה בחירה ל: '+missing.join(', '),true);
+    document.querySelectorAll('.day-card').forEach((c,i)=>{
+      c.style.borderColor=fd[i].konenut===null?'#ef4444':'';
+      c.style.boxShadow=fd[i].konenut===null?'0 0 0 2px #fee2e2':'';
+    });return;
+  }
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> שומר...';
+  requests=requests.filter(r=>!(r.name===currentUser.name&&r.weekStart===ws));
+  requests.push({id:Date.now(),name:currentUser.name,branchId:currentUser.branchId,weekStart:ws,
+    days:Array.from({length:7},(_,i)=>({day:i,konenut:fd[i].konenut,tigbur:fd[i].tigbur})),
+    notes:document.getElementById('notes').value,submittedAt:new Date().toISOString()});
+  lockedRequests[`${currentUser.name}_${ws}`]=true;
+  await saveToSheet();
+  btn.disabled=false;btn.innerHTML='<span>✅</span> הגש בקשה';
+  showToast('✅ הבקשה נשמרה!');
+  checkSubmittedStatus();
+  // notify manager
+  const bWa=waSettings[currentUser.branchId]||{};
+  if(bWa.notifyManager&&bWa.managerPhone){
+    const s=new Date(ws),e=new Date(ws);e.setDate(e.getDate()+6);
+    const msg=`✅ ${currentUser.name} הגיש/ה בקשת כוננות לשבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}`;
+    const ph=bWa.managerPhone.replace(/[^0-9]/g,'').replace(/^0/,'972');
+    const waUrl=`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`;
+    setTimeout(()=>{window.location.href=waUrl;},400);
+  }
+}
+
+function clearForm(){buildGrid();if(document.getElementById('notes'))document.getElementById('notes').value=''}
+
+// ── TABS ─────────────────────────────────────────────────
+function switchTab(t){
+  currentTab=t;
+  ['form','current','archive','history','pin','manager','super'].forEach(id=>{
+    document.getElementById('tab-btn-'+id)?.classList.toggle('active',id===t);
+    const el=document.getElementById('tab-'+id);
+    if(el)el.style.display=id===t?'':'none';
+  });
+  if(t==='current')renderCurrentWeek();
+  if(t==='archive'){buildFilterYears();renderArchive()}
+  if(t==='history')renderHistory();
+  if(t==='pin')renderSelfPinStatus();
+  if(t==='manager')renderBranchManagerTab();
+  if(t==='super'){isEditingBranches=false;renderSuperTab();}
+}
+
+// ── CURRENT WEEK ──────────────────────────────────────────
+function getBranchRequests(branchId){
+  return requests.filter(r=>r.branchId===branchId);
+}
+function getBranchEmps(branchId){
+  return getBranch(branchId)?.employeeNames.map(n=>employees.find(e=>e.name===n)).filter(Boolean)||[];
+}
+
+function renderCurrentWeek(){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const cws=getCurrentWeekStart(),nws=getNextWeekStart();
+  const allReqs=branchId?getBranchRequests(branchId):requests;
+  const displayWs=allReqs.some(r=>r.weekStart===cws)?cws:nws;
+  const s=new Date(displayWs),e=new Date(displayWs);e.setDate(e.getDate()+6);
+  document.getElementById('currentWeekLabel').textContent=`📅 ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}`;
+  const weekReqs=allReqs.filter(r=>r.weekStart===displayWs);
+  const empsToShow=branchId?getBranchEmps(branchId):employees;
+  renderSummaryTo('summaryBarCurrent',weekReqs);
+  if(!weekReqs.length){
+    document.getElementById('currentWeekArea').innerHTML='<div class="empty-state"><div class="icon">📭</div><p>אין בקשות לשבוע זה</p></div>';
+    return;
+  }
+  document.getElementById('currentWeekArea').innerHTML=buildWeekTableHTML(displayWs,weekReqs,empsToShow,false);
+}
+
+function buildWeekTableHTML(ws,weekReqs,empsToShow,showXlsBtn=true){
+  const s=new Date(ws),e=new Date(ws);e.setDate(e.getDate()+6);
+  const dates=Array.from({length:7},(_,i)=>{const d=new Date(ws);d.setDate(d.getDate()+i);return d});
+  let html=`<div class="week-block"><div class="week-title">
+    <span>📅 ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}</span>
+    ${showXlsBtn?`<button onclick="exportWeekExcel('${ws}')" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:4px 10px;font-size:0.74rem;font-weight:600;cursor:pointer;font-family:inherit;">📊 Excel</button>`:''}
+  </div><div style="overflow-x:auto;"><table class="schedule-table"><thead><tr>
+    <th>שם</th><th>סוג</th>${dates.map((d,i)=>`<th>${DAYS[i]}<br><span style="font-weight:400;font-size:0.65rem;opacity:0.8">${fmtD(d)}</span></th>`).join('')}<th>הערות</th>
+  </tr></thead><tbody>`;
+  empsToShow.forEach(emp=>{
+    const empName=emp.name||emp;
+    const req=weekReqs.find(r=>r.name===empName);
+    html+=`<tr class="row-start"><td class="person-cell" rowspan="2">${empName}</td><td class="type-cell">כוננות</td>`;
+    dates.forEach((_,i)=>{
+      const k=req?.days[i]?.konenut;
+      html+=`<td>${k===1?'<span class="badge b1">כונן</span>':k===2?'<span class="badge b2">רק 2</span>':k==='no'?'<span class="badge bno">לא</span>':'<span class="badge be">–</span>'}</td>`;
+    });
+    html+=`<td rowspan="2" style="font-size:0.74rem;color:#64748b;max-width:90px;">${req?.notes||'–'}</td></tr>`;
+    html+=`<tr><td class="type-cell">תגבור</td>`;
+    dates.forEach((_,i)=>{html+=`<td>${req?.days[i]?.tigbur?'<span class="badge bt">✓</span>':'<span class="badge be">–</span>'}</td>`});
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  return html;
+}
+
+// ── ARCHIVE ───────────────────────────────────────────────
+function buildFilterYears(){
+  const sel=document.getElementById('filterYear');
+  const cur=sel.value;
+  const branchId=currentUser?.role==='superAdmin'?null:currentUser?.branchId;
+  const reqs=branchId?getBranchRequests(branchId):requests;
+  const cws=getCurrentWeekStart();
+  const years=[...new Set(reqs.filter(r=>r.weekStart<cws).map(r=>r.weekStart.slice(0,4)))].sort().reverse();
+  sel.innerHTML='<option value="">הכל</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}</option>`).join('');
+}
+
+function renderArchive(){
+  if(!currentUser)return;
+  const fy=document.getElementById('filterYear').value;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const allReqs=branchId?getBranchRequests(branchId):requests;
+  const cws=getCurrentWeekStart();
+  const weeks=[...new Set(allReqs.filter(r=>r.weekStart<cws&&(!fy||r.weekStart.startsWith(fy))).map(r=>r.weekStart))].sort().reverse();
+  const archiveReqs=allReqs.filter(r=>weeks.includes(r.weekStart));
+  renderSummaryTo('summaryBarArchive',archiveReqs);
+  if(!weeks.length){document.getElementById('archiveArea').innerHTML='<div class="empty-state"><div class="icon">🗂️</div><p>אין שבועות בארכיון</p></div>';return}
+  const byYear={};
+  weeks.forEach(w=>{const y=w.slice(0,4);if(!byYear[y])byYear[y]=[];byYear[y].push(w)});
+  const empsToShow=branchId?getBranchEmps(branchId):employees;
+  let html='';
+  Object.keys(byYear).sort().reverse().forEach(year=>{
+    html+=`<div style="margin-bottom:24px;"><div style="font-size:1.05rem;font-weight:800;color:#1e40af;padding:8px 0;border-bottom:2px solid #e2e8f0;margin-bottom:12px;">📆 ${year}</div>`;
+    byYear[year].forEach(ws=>{
+      const wr=allReqs.filter(r=>r.weekStart===ws);
+      html+=buildWeekTableHTML(ws,wr,empsToShow,true);
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('archiveArea').innerHTML=html;
+}
+
+// ── HISTORY & TEMPLATE ────────────────────────────────────
+function renderHistory(){
+  if(!currentUser)return;
+  const myReqs=requests.filter(r=>r.name===currentUser.name).sort((a,b)=>b.weekStart.localeCompare(a.weekStart));
+  const list=document.getElementById('historyList');
+  if(!myReqs.length){list.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>אין בקשות קודמות</p></div>';return}
+  list.innerHTML=myReqs.map(r=>{
+    const s=new Date(r.weekStart),e=new Date(r.weekStart);e.setDate(e.getDate()+6);
+    const k1=r.days.filter(d=>d.konenut===1).length,k2=r.days.filter(d=>d.konenut===2).length;
+    const tg=r.days.filter(d=>d.tigbur).length,no=r.days.filter(d=>d.konenut==='no').length;
+    return `<div class="history-item">
+      <div>
+        <div style="font-weight:700;font-size:0.9rem;color:#1e40af;">📅 ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}</div>
+        <div style="font-size:0.76rem;color:#64748b;margin-top:2px;">כונן:${k1} | רק כונן 2:${k2} | לא כונן:${no} | תגבור:${tg}</div>
+        ${r.notes?`<div style="font-size:0.74rem;color:#64748b;">📝 ${r.notes}</div>`:''}
+      </div>
+      <button onclick="useAsTemplate('${r.weekStart}')" style="background:#2563eb;color:white;border:none;border-radius:7px;padding:6px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">🔄 תבנית</button>
+    </div>`;
+  }).join('');
+  renderTemplateEditor();
+}
+
+function useAsTemplate(weekStart){
+  if(!currentUser)return;
+  const req=requests.find(r=>r.name===currentUser.name&&r.weekStart===weekStart);
+  if(!req)return;
+  templates[currentUser.name]={days:req.days,notes:req.notes};
+  saveToSheet();renderTemplateDisplay();
+  showToast('✅ נשמר כתבנית!');
+}
+
+function saveCurrentAsTemplate(){
+  if(!currentUser)return;
+  const days=Array.from({length:7},(_,i)=>({day:i,konenut:fd[i].konenut,tigbur:fd[i].tigbur}));
+  templates[currentUser.name]={days,notes:document.getElementById('notes')?.value||''};
+  saveToSheet();renderTemplateDisplay();showToast('✅ תבנית נשמרה!');
+}
+
+function clearTemplate(){
+  if(!currentUser)return;
+  delete templates[currentUser.name];
+  saveToSheet();renderTemplateDisplay();showToast('🗑️ תבנית נמחקה');
+}
+
+function renderTemplateDisplay(){
+  if(!currentUser)return;
+  const tmpl=templates[currentUser.name];
+  const el=document.getElementById('templateDisplay');if(!el)return;
+  if(!tmpl){el.innerHTML='<p style="color:#94a3b8;font-size:0.84rem;">אין תבנית שמורה</p>';return}
+  const kL=k=>k===1?'כונן':k===2?'רק 2':k==='no'?'לא':'–';
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px;">${DAYS.map((d,i)=>`
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:5px 3px;text-align:center;">
+      <div style="font-size:0.68rem;font-weight:700;color:#475569;">${d}</div>
+      <div style="font-size:0.65rem;color:#1d4ed8;font-weight:600;">${kL(tmpl.days[i]?.konenut)}</div>
+      ${tmpl.days[i]?.tigbur?'<div style="font-size:0.6rem;color:#15803d;">✓</div>':''}
+    </div>`).join('')}</div>
+  ${tmpl.notes?`<div style="font-size:0.8rem;color:#64748b;">📝 ${tmpl.notes}</div>`:''}`;
+}
+
+function applyTemplate(){
+  if(!currentUser)return;
+  const tmpl=templates[currentUser.name];if(!tmpl)return;
+  document.querySelectorAll('.day-card').forEach((card,i)=>{
+    const k=tmpl.days[i]?.konenut,t=tmpl.days[i]?.tigbur;
+    fd[i]={konenut:k,tigbur:t||false};
+    card.querySelectorAll('.btn-group')[0]?.querySelectorAll('.sb').forEach(b=>b.className='sb');
+    const btns=card.querySelectorAll('.btn-group')[0]?.querySelectorAll('.sb');
+    if(btns){if(k===1)btns[0].classList.add('s1');else if(k===2)btns[1].classList.add('s2');else if(k==='no')btns[2].classList.add('sno')}
+    const tBtn=card.querySelector('[id^="tg"]');
+    if(tBtn){tBtn.className='sb'+(t?' st':'');tBtn.textContent=t?'✓ אפשרי':'אפשרי'}
+  });
+  if(tmpl.notes)document.getElementById('notes').value=tmpl.notes;
+}
+
+// ── BRANCH MANAGER TAB ────────────────────────────────────
+function renderBranchManagerTab(){
+  if(!currentUser)return;
+  if(currentUser.role==='superAdmin'){
+    // Show branch selector for super admin
+    const branchGroup=document.getElementById('unlockBranchGroup');
+    if(branchGroup){
+      branchGroup.style.display='';
+      const sel=document.getElementById('unlockBranch');
+      sel.innerHTML=branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+    }
+    // Also show branch selector in emp list and pin table
+    const firstBranch=branches[0];
+    if(firstBranch){
+      renderSubmissionStatus();
+      renderBranchEmpList(firstBranch.id);
+      renderEmpPinTable(firstBranch.id);
+      buildUnlockSelects(firstBranch.id);
+      renderWaSettings(firstBranch.id);
+    }
+    // Add branch selector to emp list card
+    renderBranchSelectorForManager();
+  } else {
+    const branchId=currentUser.branchId;
+    if(!branchId)return;
+    renderSubmissionStatus();
+    renderBranchEmpList(branchId);
+    renderEmpPinTable(branchId);
+    buildUnlockSelects(branchId);
+    renderWaSettings(branchId);
+  }
+}
+
+function onUnlockBranchChange(){
+  const branchId=document.getElementById('unlockBranch')?.value;
+  if(branchId) buildUnlockSelects(branchId);
+}
+
+function renderBranchSelectorForManager(){
+  // Add branch selector above emp list if super admin
+  const empListCard=document.getElementById('branchEmpList')?.closest('.card');
+  if(!empListCard)return;
+  let sel=document.getElementById('managerBranchSelect');
+  if(!sel){
+    const div=document.createElement('div');
+    div.style.cssText='margin-bottom:12px;display:flex;gap:8px;align-items:center;';
+    div.innerHTML=`<label style="font-size:0.8rem;font-weight:700;color:#64748b;">שלוחה:</label>
+      <select id="managerBranchSelect" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.86rem;font-family:inherit;flex:1;" onchange="onManagerBranchChange()">
+        ${branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
+      </select>`;
+    empListCard.insertBefore(div, empListCard.querySelector('h2').nextSibling);
+  } else {
+    sel.innerHTML=branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+  }
+}
+
+function onManagerBranchChange(){
+  const branchId=document.getElementById('managerBranchSelect')?.value;
+  if(branchId){
+    renderBranchEmpList(branchId);
+    renderEmpPinTable(branchId);
+  }
+}
+
+function renderBranchEmpList(branchId){
+  const branch=getBranch(branchId);if(!branch)return;
+  const chips=document.getElementById('branchEmpList');
+  chips.innerHTML=branch.employeeNames.map(n=>`
+    <div class="emp-chip">
+      <button class="x" onclick="removeEmpFromBranch('${branchId}','${n}')">✕</button>
+      ${n}${branch.managerNames.includes(n)?` <span style="font-size:0.65rem;color:#7c3aed;">⚙️</span>`:''}
+    </div>`).join('');
+  // populate add select with employees not in any branch
+  const allAssigned=branches.flatMap(b=>b.employeeNames);
+  const unassigned=employees.filter(e=>!allAssigned.includes(e.name));
+  const sel=document.getElementById('addEmpToBranchSelect');
+  sel.innerHTML='<option value="">-- בחר עובד להוסיף --</option>'+
+    [...unassigned,...employees.filter(e=>!branch.employeeNames.includes(e.name)&&allAssigned.includes(e.name))].map(e=>`<option>${e.name}</option>`).join('');
+}
+
+function addEmpToBranch(){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?branches[0]?.id:currentUser.branchId;
+  const name=document.getElementById('addEmpToBranchSelect').value;
+  if(!name)return;
+  const branch=getBranch(branchId);if(!branch)return;
+  if(!branch.employeeNames.includes(name))branch.employeeNames.push(name);
+  saveToSheet();renderBranchEmpList(branchId);showToast(`✅ ${name} נוסף`);
+}
+
+function removeEmpFromBranch(branchId,name){
+  const branch=getBranch(branchId);if(!branch)return;
+  branch.employeeNames=branch.employeeNames.filter(n=>n!==name);
+  branch.managerNames=branch.managerNames.filter(n=>n!==name);
+  saveToSheet();renderBranchEmpList(branchId);showToast(`🗑️ ${name} הוסר`);
+}
+
+function renderEmpPinTable(branchId){
+  const branch=getBranch(branchId);if(!branch)return;
+  document.getElementById('empPinTable').innerHTML=branch.employeeNames.map(n=>{
+    const emp=getEmp(n);
+    return `<tr>
+      <td style="padding:8px;font-weight:600;">${n}</td>
+      <td style="padding:8px;text-align:center;">${emp?.pin?'🔒':'🔓'}</td>
+      <td style="padding:8px;text-align:center;display:flex;gap:4px;justify-content:center;">
+        <button onclick="editEmpPin('${n}')" style="background:#f1f5f9;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.76rem;font-weight:600;color:#475569;font-family:inherit;">✏️ ${emp?.pin?'שנה':'הגדר'}</button>
+        ${emp?.pin?`<button onclick="removeEmpPin('${n}')" style="background:#fef3c7;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.76rem;font-weight:600;color:#92400e;font-family:inherit;">🔓</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editEmpPin(name){
+  openModal('עריכת PIN',`קוד PIN חדש עבור ${name}:`,
+    `<input type="text" id="editPinInput" maxlength="4" inputmode="numeric" placeholder="1234" style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:9px;font-size:1rem;text-align:center;letter-spacing:6px;font-family:inherit;margin-top:4px;">`,
+    ()=>{
+      const pin=document.getElementById('editPinInput').value.trim();
+      if(pin&&(pin.length!==4||!/^\d+$/.test(pin))){showToast('❗ PIN חייב להיות 4 ספרות',true);return}
+      const emp=getEmp(name);if(emp){emp.pin=pin;saveToSheet();
+        const branchId=currentUser.role==='superAdmin'?branches[0]?.id:currentUser.branchId;
+        renderEmpPinTable(branchId);showToast(`✅ קוד עודכן`)}
+      closeModal();
+    },'שמור','btn-ok-m');
+}
+
+function removeEmpPin(name){
+  const emp=getEmp(name);if(emp){emp.pin='';saveToSheet();
+    const branchId=currentUser.role==='superAdmin'?branches[0]?.id:currentUser.branchId;
+    renderEmpPinTable(branchId);showToast(`🔓 קוד הוסר`)}
+}
+
+function buildUnlockSelects(branchId){
+  const branch=getBranch(branchId);if(!branch)return;
+  const empSel=document.getElementById('unlockEmp');
+  // Only show employees who have a locked request
+  const lockedEmps=branch.employeeNames.filter(n=>Object.keys(lockedRequests).some(k=>k.startsWith(n+'_')));
+  empSel.innerHTML='<option value="">-- בחר עובד --</option>'+
+    lockedEmps.map(n=>{
+      // find their latest locked week
+      const weeks=Object.keys(lockedRequests).filter(k=>k.startsWith(n+'_')).map(k=>k.slice(n.length+1)).sort().reverse();
+      const latestWs=weeks[0];
+      const s=latestWs?new Date(latestWs):null;
+      const e=latestWs?new Date(latestWs):null;if(e)e.setDate(e.getDate()+6);
+      return `<option value="${n}">${n}${latestWs?` (${fmtD(s)}–${fmtD(e)})`:''}</option>`;
+    }).join('');
+  if(!lockedEmps.length) empSel.innerHTML='<option value="">-- אין בקשות נעולות --</option>';
+}
+
+function unlockRequest(){
+  const emp=document.getElementById('unlockEmp').value;
+  if(!emp){showToast('❗ בחר עובד',true);return}
+  // Find the latest locked week for this employee
+  const lockedKeys=Object.keys(lockedRequests).filter(k=>k.startsWith(emp+'_')).sort().reverse();
+  if(!lockedKeys.length){showToast('❗ אין בקשות נעולות לעובד זה',true);return}
+  const latestKey=lockedKeys[0];
+  delete lockedRequests[latestKey];
+  saveToSheet();
+  const branchId=currentUser.role==='superAdmin'?
+    (document.getElementById('unlockBranch')?.value||branches[0]?.id):currentUser.branchId;
+  buildUnlockSelects(branchId);
+  showToast(`🔓 הבקשה האחרונה של ${emp} בוטלה הנעילה`);
+}
+
+// ── WHATSAPP ──────────────────────────────────────────────
+function renderWaSettings(branchId){
+  const s=waSettings[branchId]||{};
+  const t=document.getElementById('notifyManagerToggle');if(t)t.checked=!!s.notifyManager;
+  const p=document.getElementById('managerPhone');if(p)p.value=s.managerPhone||'';
+  const a=document.getElementById('autoReminderToggle');if(a)a.checked=!!s.autoReminder;
+  const rd=document.getElementById('reminderDay');if(rd)rd.value=s.reminderDay||0;
+  const rt=document.getElementById('reminderTime');if(rt)rt.value=s.reminderTime||'09:00';
+  const rs=document.getElementById('reminderSchedule');
+  if(rs)rs.style.display=s.autoReminder?'flex':'none';
+}
+
+function saveWaSettings(){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?branches[0]?.id:currentUser.branchId;
+  if(!branchId)return;
+  waSettings[branchId]={
+    notifyManager:document.getElementById('notifyManagerToggle')?.checked||false,
+    managerPhone:document.getElementById('managerPhone')?.value||'',
+    autoReminder:document.getElementById('autoReminderToggle')?.checked||false,
+    reminderDay:parseInt(document.getElementById('reminderDay')?.value||0),
+    reminderTime:document.getElementById('reminderTime')?.value||'09:00'
+  };
+  saveToSheet();scheduleAutoReminder();
+}
+
+function toggleReminderSchedule(){
+  const show=document.getElementById('autoReminderToggle')?.checked;
+  const rs=document.getElementById('reminderSchedule');
+  if(rs)rs.style.display=show?'flex':'none';
+}
+
+function scheduleAutoReminder(){
+  if(reminderTimer)clearInterval(reminderTimer);
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const s=branchId?waSettings[branchId]||{}:{};
+  if(!s.autoReminder)return;
+  reminderTimer=setInterval(()=>{
+    const now=new Date();
+    if(now.getDay()===parseInt(s.reminderDay)){
+      const[h,m]=s.reminderTime.split(':');
+      if(now.getHours()===parseInt(h)&&now.getMinutes()===parseInt(m)) sendManualReminder();
+    }
+  },60000);
+}
+
+function sendManualReminder(){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const nws=getNextWeekStart();
+  const s=new Date(nws),e=new Date(nws);e.setDate(e.getDate()+6);
+  const emps=branchId?getBranchEmps(branchId):employees;
+  const notDone=emps.filter(emp=>!requests.some(r=>r.name===emp.name&&r.weekStart===nws));
+  const names=notDone.map(e=>e.name).join(', ')||'כולם הגישו ✅';
+  const msg=`📋 תזכורת: הגישו בקשת כוננות לשבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}\n\nטרם הגישו: ${names}\n\nלינק: ${window.location.href}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+}
+
+function sendReminderToMissing(){sendManualReminder()}
+
+function renderSubmissionStatus(){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const nws=getNextWeekStart();
+  const emps=branchId?getBranchEmps(branchId):employees;
+  const grid=document.getElementById('submissionStatusGrid');if(!grid)return;
+  grid.innerHTML=emps.map(emp=>{
+    const done=requests.some(r=>r.name===emp.name&&r.weekStart===nws);
+    return `<div class="${done?'sub-done':'sub-pending'}">${done?'✅':'⏳'} ${emp.name}</div>`;
+  }).join('');
+}
+
+async function exportTableAsImage(){
+  const el=document.getElementById('currentWeekArea');
+  if(!el||!el.innerHTML.trim()){showToast('עבור לטאב "השבוע" קודם',true);return}
+  showToast('📸 יוצר תמונה...');
+  try{
+    const canvas=await html2canvas(el,{backgroundColor:'#ffffff',scale:2,useCORS:true});
+    canvas.toBlob(blob=>{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=`sidur_${getCurrentWeekStart()}.png`;a.click();
+      URL.revokeObjectURL(url);showToast('✅ התמונה הורדה!');
+    },'image/png');
+  }catch(e){showToast('שגיאה',true)}
+}
+
+// ── SUPER ADMIN TAB ───────────────────────────────────────
+function renderSuperTab(){
+  renderBranchesList();
+  renderUnassignedEmps();
+  renderSuperAdminList();
+}
+
+function renderBranchesList(){
+  const el=document.getElementById('branchesList');
+  el.innerHTML=branches.map(b=>`
+    <div class="branch-card">
+      <div class="branch-card-header">
+        <span class="branch-name">🏢 ${b.name}</span>
+        <button onclick="deleteBranch('${b.id}')" style="background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.78rem;font-family:inherit;">✕ מחק</button>
+      </div>
+      <div class="branch-meta">${b.employeeNames.length} עובדים | ${b.managerNames.length} מנהלים</div>
+      <div class="emp-chips" style="margin-top:8px;">
+        ${b.employeeNames.map(n=>`<div class="emp-chip ${b.managerNames.includes(n)?'mgr-chip':''}">
+          ${n}${b.managerNames.includes(n)?` <span style="font-size:0.65rem;">⚙️</span>`:''}
+          ${b.managerNames.includes(n)?`<button class="x" onclick="removeMgrFromBranch('${b.id}','${n}')" title="הסר ניהול">✕</button>`:''}
+        </div>`).join('')}
+      </div>
+      <div class="branch-actions">
+        <select id="addEmpBranch_${b.id}" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:5px 8px;font-size:0.82rem;font-family:inherit;" onmousedown="isEditingBranches=true" onblur="setTimeout(()=>isEditingBranches=false,2000)">
+          <option value="">+ הוסף עובד</option>
+          ${employees.filter(e=>!b.employeeNames.includes(e.name)).map(e=>`<option value="${e.name}">${e.name}</option>`).join('')}
+        </select>
+        <button onclick="superAddEmpToBranch('${b.id}')" class="btn-green" style="padding:5px 10px;font-size:0.8rem;">הוסף</button>
+        <select id="addMgrBranch_${b.id}" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:5px 8px;font-size:0.82rem;font-family:inherit;" onmousedown="isEditingBranches=true" onblur="setTimeout(()=>isEditingBranches=false,2000)">
+          <option value="">⚙️ הגדר מנהל שלוחה</option>
+          ${b.employeeNames.filter(n=>!b.managerNames.includes(n)).map(n=>`<option value="${n}">${n}</option>`).join('')}
+        </select>
+        <button onclick="superAddMgrToBranch('${b.id}')" class="btn-purple" style="padding:5px 10px;font-size:0.8rem;">הגדר</button>
+      </div>
+    </div>`).join('')||'<div class="empty-state"><div class="icon">🏢</div><p>אין שלוחות עדיין</p></div>';
+}
+
+function addBranch(){
+  const name=document.getElementById('newBranchName').value.trim();
+  if(!name){showToast('❗ הכנס שם שלוחה',true);return}
+  if(branches.find(b=>b.name===name)){showToast('❗ שלוחה זו קיימת',true);return}
+  branches.push({id:'branch_'+Date.now(),name,managerNames:[],employeeNames:[]});
+  document.getElementById('newBranchName').value='';
+  saveToSheet();renderBranchesList();showToast(`✅ שלוחה "${name}" נוספה`);
+}
+
+function deleteBranch(id){
+  openModal('מחיקת שלוחה',`האם למחוק שלוחה זו? העובדים לא יימחקו.`,'',()=>{
+    branches=branches.filter(b=>b.id!==id);
+    saveToSheet();renderBranchesList();closeModal();showToast('🗑️ שלוחה נמחקה');
+  },'מחק','btn-danger-m');
+}
+
+function superAddEmpToBranch(branchId){
+  const name=document.getElementById(`addEmpBranch_${branchId}`)?.value;
+  if(!name)return;
+  const branch=getBranch(branchId);if(!branch)return;
+  if(!branch.employeeNames.includes(name))branch.employeeNames.push(name);
+  saveToSheet();renderBranchesList();showToast(`✅ ${name} נוסף לשלוחה`);
+}
+
+function superAddMgrToBranch(branchId){
+  const name=document.getElementById(`addMgrBranch_${branchId}`)?.value;
+  if(!name)return;
+  const branch=getBranch(branchId);if(!branch)return;
+  if(!branch.managerNames.includes(name))branch.managerNames.push(name);
+  saveToSheet();renderBranchesList();showToast(`✅ ${name} הוגדר כמנהל שלוחה`);
+}
+
+function removeMgrFromBranch(branchId, name){
+  const branch=getBranch(branchId);if(!branch)return;
+  branch.managerNames=branch.managerNames.filter(n=>n!==name);
+  saveToSheet();renderBranchesList();showToast(`🗑️ ${name} הוסר מניהול השלוחה`);
+}
+
+function renderUnassignedEmps(){
+  const allAssigned=branches.flatMap(b=>b.employeeNames);
+  const unassigned=employees.filter(e=>!allAssigned.includes(e.name)&&!superAdmins.some(s=>s.name===e.name));
+  document.getElementById('unassignedEmps').innerHTML=
+    unassigned.map(e=>`<div class="emp-chip">${e.name}
+      <button class="x" onclick="deleteEmployee('${e.name}')">✕</button>
+    </div>`).join('')||'<span style="color:#94a3b8;font-size:0.84rem;">כל העובדים משויכים לשלוחות</span>';
+  const sel=document.getElementById('newSuperSelect');
+  sel.innerHTML='<option value="">-- בחר עובד --</option>'+
+    employees.filter(e=>!superAdmins.some(s=>s.name===e.name)).map(e=>`<option>${e.name}</option>`).join('');
+}
+
+function addEmployeeSuper(){
+  const name=document.getElementById('newEmpNameSuper').value.trim();
+  const pin=document.getElementById('newEmpPinSuper').value.trim();
+  if(!name){showToast('❗ הכנס שם',true);return}
+  if(employees.find(e=>e.name===name)){showToast('❗ עובד קיים',true);return}
+  if(pin&&(pin.length!==4||!/^\d+$/.test(pin))){showToast('❗ PIN חייב להיות 4 ספרות',true);return}
+  employees.push({name,pin:pin||''});
+  document.getElementById('newEmpNameSuper').value='';
+  document.getElementById('newEmpPinSuper').value='';
+  saveToSheet();renderUnassignedEmps();renderBranchesList();showToast(`✅ ${name} נוסף`);
+}
+
+function deleteEmployee(name){
+  openModal('מחיקת עובד',`האם למחוק את ${name}?`,'',()=>{
+    employees=employees.filter(e=>e.name!==name);
+    branches.forEach(b=>{b.employeeNames=b.employeeNames.filter(n=>n!==name);b.managerNames=b.managerNames.filter(n=>n!==name)});
+    saveToSheet();renderUnassignedEmps();renderBranchesList();closeModal();showToast(`🗑️ ${name} נמחק`);
+  },'מחק','btn-danger-m');
+}
+
+function renderSuperAdminList(){
+  document.getElementById('superAdminList').innerHTML=
+    superAdmins.map(s=>`<div class="emp-chip mgr-chip">👑 ${s.name}
+      <button class="x" onclick="removeSuperAdmin('${s.name}')">✕</button>
+    </div>`).join('');
+}
+
+function addSuperAdmin(){
+  const name=document.getElementById('newSuperSelect').value;
+  const pin=document.getElementById('newSuperPin').value.trim();
+  if(!name){showToast('❗ בחר עובד',true);return}
+  if(!pin||pin.length!==4||!/^\d+$/.test(pin)){showToast('❗ PIN מנהל חייב להיות 4 ספרות',true);return}
+  if(superAdmins.some(s=>s.name===name)){showToast('❗ כבר מנהל כללי',true);return}
+  // update their emp PIN too
+  const emp=getEmp(name);if(emp)emp.pin=pin;
+  superAdmins.push({name,pin});
+  document.getElementById('newSuperPin').value='';
+  saveToSheet();renderSuperAdminList();renderUnassignedEmps();showToast(`✅ ${name} הוגדר כמנהל כללי`);
+}
+
+function removeSuperAdmin(name){
+  if(superAdmins.length<=1){showToast('❗ חייב להישאר לפחות מנהל כללי אחד',true);return}
+  // If removing yourself, require your PIN
+  if(name===currentUser?.name){
+    openModal('אישור הסרה עצמית',`להסיר את עצמך מניהול כללי? הכנס את קוד ה-PIN שלך לאישור:`,
+      `<input type="password" id="selfRemovePin" maxlength="4" inputmode="numeric" placeholder="••••" style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:9px;font-size:1.2rem;text-align:center;letter-spacing:8px;font-family:inherit;margin-top:4px;">`,
+      ()=>{
+        const pin=document.getElementById('selfRemovePin').value;
+        const me=superAdmins.find(s=>s.name===name);
+        if(!me?.pin||pin!==me.pin){showToast('❗ קוד שגוי',true);return}
+        superAdmins=superAdmins.filter(s=>s.name!==name);
+        saveToSheet();renderSuperAdminList();closeModal();
+        showToast(`🗑️ ${name} הוסר ממנהלים כלליים`);
+      },'הסר','btn-danger-m');
+    return;
+  }
+  // Removing someone else - just confirm
+  openModal('הסרת מנהל כללי',`האם להסיר את ${name} מניהול כללי?`,'',()=>{
+    superAdmins=superAdmins.filter(s=>s.name!==name);
+    saveToSheet();renderSuperAdminList();closeModal();showToast(`🗑️ ${name} הוסר ממנהלים כלליים`);
+  },'הסר','btn-danger-m');
+}
+
+function renderTemplateEditor(){
+  if(!currentUser)return;
+  const tmpl=templates[currentUser.name];
+  if(tmpl?.weekdays) tmplEdit=tmpl.weekdays.map(d=>({...d}));
+  else tmplEdit=Array.from({length:7},(_,i)=>({day:i,konenut:null,tigbur:false}));
+
+  const el=document.getElementById('templateEditor');
+  if(!el)return;
+
+  const kVals=[1,2,'no',null];
+  const kLabels=['כונן','רק כונן 2','לא כונן','ריק'];
+  const kClass=['active-k1','active-k2','active-no','active-empty'];
+  const kEmoji=['🔵','🟣','🔴','⬜'];
+  const tgLabel=t=>t?'✅ תגבור':'תגבור';
+
+  el.innerHTML=`
+    <div class="tmpl-wrap" style="margin-bottom:10px;">
+      <div class="tmpl-header">
+        <span>יום</span>
+        ${kLabels.map((l,j)=>`<span>${kEmoji[j]} ${l}</span>`).join('')}
+        <span>🟢 תגבור</span>
+      </div>
+      <div class="tmpl-grid">
+        ${DAYS.map((d,i)=>`
+          <div class="tmpl-row" data-row="${i}">
+            <div class="tmpl-day-chip">${d}</div>
+            ${kVals.map((v,j)=>`
+              <button class="tmpl-opt${tmplEdit[i].konenut===v?' '+kClass[j]:''}" data-row="${i}" data-pos="${j}">
+                ${tmplEdit[i].konenut===v?'✓ ':''} ${kLabels[j]}
+              </button>`).join('')}
+            <button class="tmpl-tg${tmplEdit[i].tigbur?' active-tg':''}" data-row="${i}">
+              ${tgLabel(tmplEdit[i].tigbur)}
+            </button>
+          </div>`).join('')}
+      </div>
+    </div>
+    <p style="font-size:0.76rem;color:#94a3b8;margin-bottom:6px;">💡 <b>ריק</b> = פתוח לבחירה ידנית בכל שבוע</p>`;
+
+  // Konenut buttons
+  el.querySelectorAll('.tmpl-opt').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const i=parseInt(this.dataset.row);
+      const pos=parseInt(this.dataset.pos);
+      const val=kVals[pos];
+      tmplEdit[i].konenut=val;
+      // Update all konenut buttons in this row
+      const row=el.querySelector(`.tmpl-row[data-row="${i}"]`);
+      row.querySelectorAll('.tmpl-opt').forEach((b,j)=>{
+        const isActive=tmplEdit[i].konenut===kVals[j];
+        b.className='tmpl-opt'+(isActive?' '+kClass[j]:'');
+        b.textContent=(isActive?'✓ ':'')+kLabels[j];
+      });
+      // Pulse animation
+      this.classList.add('tmpl-pulse');
+      setTimeout(()=>this.classList.remove('tmpl-pulse'),300);
+    });
+  });
+
+  // Tigbur buttons
+  el.querySelectorAll('.tmpl-tg').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const i=parseInt(this.dataset.row);
+      tmplEdit[i].tigbur=!tmplEdit[i].tigbur;
+      this.className='tmpl-tg'+(tmplEdit[i].tigbur?' active-tg':'');
+      this.textContent=tgLabel(tmplEdit[i].tigbur);
+      this.classList.add('tmpl-pulse');
+      setTimeout(()=>this.classList.remove('tmpl-pulse'),300);
+    });
+  });
+
+  renderTemplateDisplay();
+}
+
+function setTmplK(i,val){tmplEdit[i].konenut=val;}
+function togTmplT(i){tmplEdit[i].tigbur=!tmplEdit[i].tigbur;}
+
+function saveWeekdayTemplate(){
+  if(!currentUser)return;
+  templates[currentUser.name]={weekdays:tmplEdit.map(d=>({...d}))};
+  saveToSheet();
+  renderTemplateDisplay();
+  showToast('✅ התבנית נשמרה!');
+  document.getElementById('applyTmplBtn').style.display='';
+}
+
+function clearTemplate(){
+  if(!currentUser)return;
+  delete templates[currentUser.name];
+  tmplEdit=Array.from({length:7},(_,i)=>({day:i,konenut:null,tigbur:false}));
+  saveToSheet();
+  renderTemplateEditor();
+  showToast('🗑️ התבנית נמחקה');
+}
+
+function renderTemplateDisplay(){
+  if(!currentUser)return;
+  const tmpl=templates[currentUser.name];
+  const el=document.getElementById('templateDisplay');
+  if(!el)return;
+  if(!tmpl?.weekdays){
+    el.innerHTML='<p style="color:#94a3b8;font-size:0.84rem;margin-top:10px;text-align:center;">אין תבנית שמורה עדיין</p>';
+    return;
+  }
+  const cfg={
+    1:{label:'כונן',bg:'linear-gradient(135deg,#2563eb,#1d4ed8)',color:'white',border:'#2563eb'},
+    2:{label:'רק כונן 2',bg:'linear-gradient(135deg,#7c3aed,#6d28d9)',color:'white',border:'#7c3aed'},
+    'no':{label:'לא כונן',bg:'linear-gradient(135deg,#ef4444,#dc2626)',color:'white',border:'#ef4444'},
+    null:{label:'ריק',bg:'#f1f5f9',color:'#94a3b8',border:'#e2e8f0'}
+  };
+  el.innerHTML=`<div style="margin-top:16px;padding-top:14px;border-top:2px dashed #e2e8f0;">
+    <div style="font-size:0.82rem;font-weight:700;color:#1e40af;margin-bottom:10px;">✅ תבנית שמורה</div>
+    <div class="tmpl-summary">${DAYS.map((d,i)=>{
+      const day=tmpl.weekdays[i];
+      const c=cfg[day?.konenut]||cfg[null];
+      return `<div class="tmpl-summary-day" style="background:${c.bg};border-color:${c.border};">
+        <div class="tmpl-summary-name" style="color:${c.color};font-size:0.72rem;">${d}</div>
+        <div style="font-size:0.62rem;font-weight:700;color:${c.color};margin-top:2px;">${c.label}</div>
+        ${day?.tigbur?`<div style="font-size:0.6rem;margin-top:2px;background:rgba(255,255,255,0.25);border-radius:4px;padding:1px 3px;color:${c.color};">✓ תגבור</div>`:''}
+      </div>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+function applyTemplate(){
+  if(!currentUser)return;
+  const tmpl=templates[currentUser.name];
+  if(!tmpl?.weekdays)return;
+  document.querySelectorAll('.day-card').forEach((card,i)=>{
+    const wd=tmpl.weekdays[i];
+    const k=wd?.konenut; // null = leave empty
+    const t=wd?.tigbur||false;
+    // Only apply if not null (null means "leave for manual input")
+    if(k!==null&&k!==undefined){
+      fd[i].konenut=k;
+      card.querySelectorAll('.btn-group')[0]?.querySelectorAll('.sb').forEach(b=>b.className='sb');
+      const btns=card.querySelectorAll('.btn-group')[0]?.querySelectorAll('.sb');
+      if(btns){
+        if(k===1)btns[0].classList.add('s1');
+        else if(k===2)btns[1].classList.add('s2');
+        else if(k==='no')btns[2].classList.add('sno');
+      }
+    }
+    if(t){
+      fd[i].tigbur=true;
+      const tBtn=card.querySelector('[id^="tg"]');
+      if(tBtn){tBtn.className='sb st';tBtn.textContent='✓ אפשרי'}
+    }
+  });
+}
+
+// ── SELF PIN ─────────────────────────────────────────────
+function renderSelfPinStatus(){
+  if(!currentUser)return;
+  let emp;
+  if(currentUser.role==='superAdmin') emp=superAdmins.find(s=>s.name===currentUser.name);
+  else emp=getEmp(currentUser.name);
+  const status=document.getElementById('pinCurrentStatus');
+  const removeBtn=document.getElementById('removeSelfPinBtn');
+  if(!status)return;
+  if(emp?.pin){
+    status.innerHTML='<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:20px;font-size:0.82rem;font-weight:600;">🔒 יש קוד PIN פעיל</span>';
+    if(removeBtn)removeBtn.style.display='';
+  } else {
+    status.innerHTML='<span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:0.82rem;font-weight:600;">🔓 אין קוד PIN</span>';
+    if(removeBtn)removeBtn.style.display='none';
+  }
+  document.getElementById('selfPinInput').value='';
+  document.getElementById('selfPinConfirm').value='';
+}
+
+function saveSelfPin(){
+  const pin=document.getElementById('selfPinInput').value.trim();
+  const conf=document.getElementById('selfPinConfirm').value.trim();
+  if(!pin){showToast('❗ הכנס קוד',true);return}
+  if(pin.length!==4||!/^\d+$/.test(pin)){showToast('❗ PIN חייב להיות 4 ספרות',true);return}
+  if(pin!==conf){showToast('❗ הקודים לא תואמים',true);return}
+  if(currentUser.role==='superAdmin'){const s=superAdmins.find(x=>x.name===currentUser.name);if(s)s.pin=pin}
+  else{const e=getEmp(currentUser.name);if(e)e.pin=pin}
+  saveToSheet();renderSelfPinStatus();showToast('✅ קוד PIN נשמר!');
+}
+
+function removeSelfPin(){
+  if(currentUser.role==='superAdmin'){const s=superAdmins.find(x=>x.name===currentUser.name);if(s)s.pin=''}
+  else{const e=getEmp(currentUser.name);if(e)e.pin=''}
+  saveToSheet();renderSelfPinStatus();showToast('🔓 קוד PIN הוסר');
+}
+
+// ── EXCEL / CSV ───────────────────────────────────────────
+function kLabel(k){return k===1?'כונן':k===2?'רק כונן 2':k==='no'?'לא כונן':''}
+
+function buildXlsxForWeek(ws,empsToShow){
+  const wb=XLSX.utils.book_new();
+  const s=new Date(ws),e=new Date(ws);e.setDate(e.getDate()+6);
+  const dates=Array.from({length:7},(_,i)=>{const d=new Date(ws);d.setDate(d.getDate()+i);return d});
+  const sheetName=`${fmtD(s)}-${fmtD(e)}`.replace(/\//g,'.');
+  const aoa=[[`סידור עבודה – שבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}`],
+    ['שם','סוג',...DAYS.map((d,i)=>`${d} ${fmtD(dates[i])}`),'הערות']];
+  const weekReqs=requests.filter(r=>r.weekStart===ws);
+  empsToShow.forEach(emp=>{
+    const name=emp.name||emp;
+    const req=weekReqs.find(r=>r.name===name);
+    aoa.push([name,'כוננות',...Array.from({length:7},(_,i)=>kLabel(req?.days[i]?.konenut)),req?.notes||'']);
+    aoa.push(['','תגבור',...Array.from({length:7},(_,i)=>req?.days[i]?.tigbur?'אפשרי':''),'']);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(aoa);
+  ws2['!cols']=[{wch:12},{wch:8},...Array(7).fill({wch:13}),{wch:18}];
+  ws2['!merges']=[{s:{r:0,c:0},e:{r:0,c:9}}];
+  XLSX.utils.book_append_sheet(wb,ws2,sheetName);
+  return wb;
+}
+
+function exportCurrentWeekExcel(){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const cws=getCurrentWeekStart(),nws=getNextWeekStart();
+  const allReqs=branchId?getBranchRequests(branchId):requests;
+  const ws=allReqs.some(r=>r.weekStart===cws)?cws:nws;
+  const emps=branchId?getBranchEmps(branchId):employees;
+  XLSX.writeFile(buildXlsxForWeek(ws,emps),`sidur_${ws}.xlsx`,{bookType:'xlsx',type:'binary'});
+  showToast('📊 Excel הורד!');
+}
+
+function exportWeekExcel(ws){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const emps=branchId?getBranchEmps(branchId):employees;
+  XLSX.writeFile(buildXlsxForWeek(ws,emps),`sidur_${ws}.xlsx`,{bookType:'xlsx',type:'binary'});
+  showToast('📊 Excel הורד!');
+}
+
+function exportArchiveExcel(){
+  if(!currentUser)return;
+  const fy=document.getElementById('filterYear').value;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const allReqs=branchId?getBranchRequests(branchId):requests;
+  const cws=getCurrentWeekStart();
+  const weeks=[...new Set(allReqs.filter(r=>r.weekStart<cws&&(!fy||r.weekStart.startsWith(fy))).map(r=>r.weekStart))].sort();
+  if(!weeks.length){showToast('אין נתונים',true);return}
+  const emps=branchId?getBranchEmps(branchId):employees;
+  const wb=XLSX.utils.book_new();
+  weeks.forEach(ws=>{
+    const s=new Date(ws),e=new Date(ws);e.setDate(e.getDate()+6);
+    const dates=Array.from({length:7},(_,i)=>{const d=new Date(ws);d.setDate(d.getDate()+i);return d});
+    const sheetName=`${fmtD(s)}-${fmtD(e)}`.replace(/\//g,'.');
+    const aoa=[[`שבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}`],['שם','סוג',...DAYS.map((d,i)=>`${d} ${fmtD(dates[i])}`),'הערות']];
+    const weekReqs=allReqs.filter(r=>r.weekStart===ws);
+    emps.forEach(emp=>{
+      const name=emp.name||emp,req=weekReqs.find(r=>r.name===name);
+      aoa.push([name,'כוננות',...Array.from({length:7},(_,i)=>kLabel(req?.days[i]?.konenut)),req?.notes||'']);
+      aoa.push(['','תגבור',...Array.from({length:7},(_,i)=>req?.days[i]?.tigbur?'אפשרי':''),'']);
+    });
+    const ws2=XLSX.utils.aoa_to_sheet(aoa);
+    ws2['!cols']=[{wch:12},{wch:8},...Array(7).fill({wch:13}),{wch:18}];
+    XLSX.utils.book_append_sheet(wb,ws2,sheetName);
+  });
+  XLSX.writeFile(wb,`archive_${fy||'all'}.xlsx`,{bookType:'xlsx',type:'binary'});
+  showToast('📊 Excel הורד!');
+}
+
+function exportCSV(){
+  if(!currentUser)return;
+  const branchId=currentUser.role==='superAdmin'?null:currentUser.branchId;
+  const cws=getCurrentWeekStart();
+  const allReqs=branchId?getBranchRequests(branchId):requests;
+  const fil=allReqs.filter(r=>r.weekStart<cws);
+  if(!fil.length){showToast('אין נתונים',true);return}
+  const hdrs=['שם','שבוע',...DAYS.map(d=>`${d} - כוננות`),...DAYS.map(d=>`${d} - תגבור`),'הערות'];
+  const rows=fil.map(r=>[r.name,r.weekStart,...r.days.map(d=>kLabel(d.konenut)),...r.days.map(d=>d.tigbur?'אפשרי':''),r.notes]);
+  const csv='\uFEFF'+[hdrs,...rows].map(r=>r.map(c=>`"${c||''}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='archive.csv';a.click();
+}
+
+// ── SUMMARY ───────────────────────────────────────────────
+function renderSummaryTo(elId,fil){
+  const k1=fil.reduce((s,r)=>s+r.days.filter(d=>d.konenut===1).length,0);
+  const k2=fil.reduce((s,r)=>s+r.days.filter(d=>d.konenut===2).length,0);
+  const tg=fil.reduce((s,r)=>s+r.days.filter(d=>d.tigbur).length,0);
+  document.getElementById(elId).innerHTML=`
+    <div class="chip"><span class="num">${fil.length}</span><span class="lbl">בקשות</span></div>
+    <div class="chip"><span class="num" style="color:#1d4ed8">${k1}</span><span class="lbl">כונן</span></div>
+    <div class="chip"><span class="num" style="color:#6d28d9">${k2}</span><span class="lbl">רק כונן 2</span></div>
+    <div class="chip"><span class="num" style="color:#15803d">${tg}</span><span class="lbl">תגבור</span></div>`;
+}
+
+// ── MODAL ─────────────────────────────────────────────────
+function openModal(title,msg,extra,onConfirm,confirmClass='btn-ok-m'){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalMsg').textContent=msg;
+  document.getElementById('modalExtra').innerHTML=extra||'';
+  const btn=document.getElementById('modalConfirm');
+  btn.className=confirmClass;btn.onclick=onConfirm;btn.textContent='אישור';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open')}
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
+
+// ── TOAST ─────────────────────────────────────────────────
+function showToast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=err?'#dc2626':'#16a34a';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── INIT ─────────────────────────────────────────────────
+function revealApp(){
+  const overlay=document.getElementById('loadingOverlay');
+  const login=document.getElementById('loginScreen');
+  if(overlay){overlay.classList.add('hidden');setTimeout(()=>overlay.style.display='none',400);}
+  if(!superAdmins.length){
+    showSetupScreen();
+  } else {
+    populateLoginBranches();
+    if(login){login.style.opacity='1';login.style.pointerEvents='';}
+  }
+}
+
+window.onload=async()=>{
+  // Timeout fallback - show login after 6s regardless
+  const fallback=setTimeout(()=>{revealApp();},6000);
+  try{
+    await loadFromSheet();
+  }catch(e){}
+  clearTimeout(fallback);
+  revealApp();
+};
+</script>
+</body>
+</html>
