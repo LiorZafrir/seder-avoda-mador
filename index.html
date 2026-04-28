@@ -781,7 +781,11 @@ function doLogin(){
     if(pin!==emp.pin){showLoginErr('קוד שגוי');return}
   }
   currentUser={name,branchId:userBranchId,role};
-  document.getElementById('loginScreen').classList.add('hidden');
+  const ls=document.getElementById('loginScreen');
+  ls.classList.add('hidden');
+  ls.style.opacity='0';
+  ls.style.pointerEvents='none';
+  setTimeout(()=>ls.style.display='none',350);
   document.getElementById('userBadge').textContent=`👤 ${name}`;
   const branchName=userBranchId?getBranch(userBranchId)?.name:'';
   document.getElementById('branchBadgeHeader').textContent=
@@ -804,7 +808,11 @@ function doLogin(){
 function showLoginErr(msg){const el=document.getElementById('loginErr');el.textContent=msg;el.style.display='block'}
 function logout(){
   currentUser=null;
-  document.getElementById('loginScreen').classList.remove('hidden');
+  const ls=document.getElementById('loginScreen');
+  ls.style.display='flex';
+  ls.style.opacity='1';
+  ls.style.pointerEvents='';
+  ls.classList.remove('hidden');
   document.getElementById('loginPin').value='';
   document.getElementById('pinSection').style.display='none';
   document.getElementById('loginName').style.display='none';
