@@ -196,13 +196,21 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 .hdr-spacer{min-width:140px;}
 /* Mobile */
 @media(max-width:600px){
-  .hdr-inner{flex-direction:column;padding:8px 14px;gap:6px;min-height:auto;}
-  .hdr-center{position:static;transform:none;flex-direction:row;flex-wrap:nowrap;}
+  .hdr-inner{flex-direction:column;padding:6px 14px 8px;gap:0;min-height:auto;}
+  /* Row 1: logo centered */
+  .hdr-center{position:static;transform:none;order:1;margin:6px auto 4px;}
   .hdr-text{font-size:0.82rem;letter-spacing:0.2px;}
   .hdr-logo-wrap{padding:3px;}
-  .hdr-logo-img{width:36px;height:36px;}
-  .hdr-user{flex-direction:row;align-items:center;flex-wrap:wrap;justify-content:center;gap:5px;}
+  .hdr-logo-img{width:40px;height:40px;}
+  /* Row 2: user right, sync left */
+  .hdr-bottom-row{display:flex;align-items:center;justify-content:space-between;width:100%;order:2;}
+  .hdr-user{flex-direction:column;align-items:flex-end;gap:2px;}
+  .hdr-sync{display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
   .hdr-spacer{display:none;}
+  /* Hide user+sync from original positions */
+  .hdr-inner > .hdr-user{display:none;}
+  .hdr-inner > .hdr-spacer{display:none;}
+  .hdr-bottom-row{display:flex !important;}
 }
 
 </style>
@@ -293,7 +301,7 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 <!-- ══ HEADER ══ -->
 <header>
   <div class="hdr-inner">
-    <!-- User (right side in RTL) -->
+    <!-- User (right side in RTL) - desktop only -->
     <div class="hdr-user">
       <div class="user-badge" onclick="logout()" id="userBadge">👤 —</div>
       <div style="display:flex;gap:5px;align-items:center;">
@@ -309,8 +317,18 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
       </div>
       <span class="hdr-text">מדור מעבדות חבלה</span>
     </div>
-    <!-- Spacer (left side) -->
+    <!-- Spacer (left side) - desktop only -->
     <div class="hdr-spacer"></div>
+    <!-- Mobile bottom row: user right, sync left -->
+    <div class="hdr-bottom-row" style="display:none;">
+      <div class="hdr-sync">
+        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.7rem;">⏳</div>
+      </div>
+      <div class="hdr-user" style="flex-direction:column;align-items:flex-end;gap:2px;">
+        <div class="user-badge" onclick="logout()" style="font-size:0.75rem;padding:3px 9px;">👤 <span id="userBadgeMobile">—</span></div>
+        <div class="branch-badge-header" id="branchBadgeHeaderMobile" style="font-size:0.7rem;"></div>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -656,6 +674,8 @@ function setSyncStatus(s){
   if(s==='ok'){el.className='sync-status sync-ok';el.textContent='✅ מסונכרן'}
   else if(s==='error'){el.className='sync-status sync-err';el.textContent='❌ שגיאה'}
   else{el.className='sync-status sync-loading';el.textContent='⏳ מסנכרן...'}
+  const m=document.getElementById('syncStatusMobile');
+  if(m){m.className=el.className;m.textContent=s==='ok'?'✅':s==='error'?'❌':'⏳';}
 }
 
 function refreshAfterLoad(){
@@ -834,9 +854,12 @@ function doLogin(){
   ls.style.pointerEvents='none';
   setTimeout(()=>ls.style.display='none',350);
   document.getElementById('userBadge').textContent=`👤 ${name}`;
+  const mob=document.getElementById('userBadgeMobile');if(mob)mob.textContent=name;
   const branchName=userBranchId?getBranch(userBranchId)?.name:'';
   document.getElementById('branchBadgeHeader').textContent=
     role==='superAdmin'?'👑 מנהל כללי':branchName?`🏢 ${branchName}`:'';
+  const mobBranch=document.getElementById('branchBadgeHeaderMobile');
+  if(mobBranch)mobBranch.textContent=role==='superAdmin'?'👑 מנהל כללי':branchName?`🏢 ${branchName}`:'';
   // Show tabs based on role
   document.getElementById('tab-btn-manager').style.display=
     (role==='branchManager'||role==='superAdmin')?'':'none';
