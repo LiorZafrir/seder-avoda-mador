@@ -1018,7 +1018,7 @@ function buildWeekTableHTML(ws,weekReqs,empsToShow,showXlsBtn=true){
     html+=`<tr class="row-start"><td class="person-cell" rowspan="2">${empName}</td><td class="type-cell">כוננות</td>`;
     dates.forEach((_,i)=>{
       const k=req?.days[i]?.konenut;
-      html+=`<td>${k===1?'<span class="badge b1">כונן</span>':k===2?'<span class="badge b2">רק כונן 2</span>':k==='no'?'<span class="badge bno">לא</span>':'<span class="badge be">–</span>'}</td>`;
+      html+=`<td>${k===1?'<span class="badge b1">כונן</span>':k===2?'<span class="badge b2">רק כונן 2</span>':k==='no'?'<span class="badge bno">לא כונן</span>':'<span class="badge be">–</span>'}</td>`;
     });
     html+=`<td rowspan="2" style="font-size:0.74rem;color:#64748b;max-width:90px;">${req?.notes||'–'}</td></tr>`;
     html+=`<tr class="row-tigbur"><td class="type-cell">תגבור</td>`;
