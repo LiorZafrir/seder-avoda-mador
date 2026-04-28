@@ -1817,6 +1817,7 @@ function revealApp(){
   if(!superAdmins.length){
     showSetupScreen();
   } else {
+    populateLoginBranches();
     if(login){login.style.opacity='1';login.style.pointerEvents='';}
   }
 }
