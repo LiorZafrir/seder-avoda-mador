@@ -196,15 +196,66 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 .hdr-spacer{min-width:140px;}
 /* Mobile */
 @media(max-width:600px){
-  .hdr-inner{flex-direction:column;padding:8px 14px 10px;gap:0;min-height:auto;}
-  .hdr-center{position:static;transform:none;order:1;margin:0 auto 8px;justify-content:center;}
-  .hdr-text{font-size:0.82rem;letter-spacing:0.2px;}
+  .hdr-inner{
+    flex-direction:column;
+    align-items:center;
+    padding:8px 0 10px;
+    gap:0;
+    min-height:auto;
+    position:relative;
+  }
+  /* Logo + title row - centered */
+  .hdr-center{
+    position:static;
+    transform:none;
+    order:1;
+    margin:0 auto 10px;
+    justify-content:center;
+    pointer-events:auto;
+  }
+  .hdr-text{font-size:0.8rem;letter-spacing:0.2px;}
   .hdr-logo-wrap{padding:3px;}
   .hdr-logo-img{width:42px;height:42px;}
-  .hdr-bottom-row{display:flex !important;align-items:center;justify-content:space-between;width:100%;order:2;padding:0;}
-  .hdr-sync{display:flex;align-items:center;padding-right:4px;}
-  .hdr-user-mobile{display:flex;flex-direction:column;align-items:flex-end;gap:3px;padding-left:4px;}
-  .mob-name,.mob-branch{font-size:0.75rem;font-weight:700;color:white;background:rgba(255,255,255,0.18);border-radius:16px;padding:3px 10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+  /* Bottom row */
+  .hdr-bottom-row{
+    display:flex !important;
+    align-items:center;
+    width:100%;
+    order:2;
+    position:relative;
+    min-height:42px;
+    padding:0 10px;
+  }
+  /* Sync - absolute left corner */
+  .hdr-sync{
+    position:absolute;
+    left:10px;
+    top:50%;
+    transform:translateY(-50%);
+  }
+  /* User - absolute right corner */
+  .hdr-user-mobile{
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:3px;
+  }
+  .mob-name,.mob-branch{
+    font-size:0.75rem;
+    font-weight:700;
+    color:white;
+    background:rgba(255,255,255,0.18);
+    border-radius:16px;
+    padding:3px 10px;
+    max-width:140px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
   .hdr-spacer{display:none;}
   .hdr-inner > .hdr-user{display:none;}
   .hdr-inner > .hdr-spacer{display:none;}
