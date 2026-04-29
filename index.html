@@ -196,18 +196,16 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 .hdr-spacer{min-width:140px;}
 /* Mobile */
 @media(max-width:600px){
-  .hdr-inner{flex-direction:column;padding:6px 14px 10px;gap:0;min-height:auto;}
-  /* Row 1: logo + title centered */
-  .hdr-center{position:static;transform:none;order:1;margin:6px auto 8px;justify-content:center;}
-  .hdr-text{font-size:0.8rem;letter-spacing:0.2px;}
+  .hdr-inner{flex-direction:column;padding:8px 14px 10px;gap:0;min-height:auto;}
+  .hdr-center{position:static;transform:none;order:1;margin:0 auto 8px;justify-content:center;}
+  .hdr-text{font-size:0.82rem;letter-spacing:0.2px;}
   .hdr-logo-wrap{padding:3px;}
-  .hdr-logo-img{width:40px;height:40px;}
-  /* Row 2: sync LEFT, user RIGHT */
-  .hdr-bottom-row{display:flex !important;align-items:center;justify-content:space-between;width:100%;order:2;}
-  /* sync on left */
-  .hdr-sync{display:flex;align-items:center;gap:4px;}
-  /* user+branch on right */
-  .hdr-user-mobile{display:flex;align-items:center;gap:6px;}
+  .hdr-logo-img{width:42px;height:42px;}
+  .hdr-bottom-row{display:flex !important;align-items:center;justify-content:space-between;width:100%;order:2;padding:0 2px;}
+  .hdr-sync{display:flex;align-items:center;}
+  .hdr-user-mobile{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+  .hdr-user-mobile .mob-name{font-size:0.78rem;font-weight:700;color:white;background:rgba(255,255,255,0.18);border-radius:16px;padding:3px 10px;}
+  .hdr-user-mobile .mob-branch{font-size:0.78rem;font-weight:700;color:white;background:rgba(255,255,255,0.18);border-radius:16px;padding:3px 10px;}
   .hdr-spacer{display:none;}
   .hdr-inner > .hdr-user{display:none;}
   .hdr-inner > .hdr-spacer{display:none;}
@@ -321,14 +319,14 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
     <div class="hdr-spacer"></div>
     <!-- Mobile only bottom row -->
     <div class="hdr-bottom-row" style="display:none;">
-      <!-- LEFT: sync status -->
+      <!-- LEFT: sync -->
       <div class="hdr-sync">
-        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.75rem;">⏳ מתחבר...</div>
+        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.76rem;">⏳ מתחבר...</div>
       </div>
-      <!-- RIGHT: user badge + branch -->
+      <!-- RIGHT: name (top) + branch (below) -->
       <div class="hdr-user-mobile">
-        <div class="branch-badge-header" id="branchBadgeHeaderMobile" style="font-size:0.75rem;"></div>
-        <div class="user-badge" onclick="logout()" style="font-size:0.75rem;padding:4px 10px;">👤 <span id="userBadgeMobile">—</span></div>
+        <div class="mob-name" onclick="logout()">👤 <span id="userBadgeMobile">—</span></div>
+        <div class="mob-branch" id="branchBadgeHeaderMobile"></div>
       </div>
     </div>
   </div>
@@ -677,7 +675,7 @@ function setSyncStatus(s){
   else if(s==='error'){el.className='sync-status sync-err';el.textContent='❌ שגיאה'}
   else{el.className='sync-status sync-loading';el.textContent='⏳ מסנכרן...'}
   const m=document.getElementById('syncStatusMobile');
-  if(m){m.className=el.className;m.textContent=s==='ok'?'✅':s==='error'?'❌':'⏳';}
+  if(m){m.className=el.className;m.textContent=s==='ok'?'✅ מסונכרן':s==='error'?'❌ שגיאה':'⏳ מתחבר...';}
 }
 
 function refreshAfterLoad(){
