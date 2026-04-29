@@ -319,14 +319,14 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
     <div class="hdr-spacer"></div>
     <!-- Mobile only bottom row -->
     <div class="hdr-bottom-row" style="display:none;">
-      <!-- LEFT: sync -->
-      <div class="hdr-sync">
-        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.76rem;">⏳ מתחבר...</div>
-      </div>
-      <!-- RIGHT: name (top) + branch (below) -->
+      <!-- RIGHT (RTL): name + branch -->
       <div class="hdr-user-mobile">
         <div class="mob-name" onclick="logout()">👤 <span id="userBadgeMobile">—</span></div>
         <div class="mob-branch" id="branchBadgeHeaderMobile"></div>
+      </div>
+      <!-- LEFT (RTL): sync -->
+      <div class="hdr-sync">
+        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.76rem;">⏳ מתחבר...</div>
       </div>
     </div>
   </div>
