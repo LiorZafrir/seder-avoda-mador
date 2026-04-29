@@ -202,9 +202,7 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
     padding:8px 0 10px;
     gap:0;
     min-height:auto;
-    position:relative;
   }
-  /* Logo + title row - centered */
   .hdr-center{
     position:static;
     transform:none;
@@ -216,45 +214,40 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
   .hdr-text{font-size:0.8rem;letter-spacing:0.2px;}
   .hdr-logo-wrap{padding:3px;}
   .hdr-logo-img{width:42px;height:42px;}
-  /* Bottom row */
+  /* Bottom row: sync on left edge, user on right edge */
   .hdr-bottom-row{
     display:flex !important;
     align-items:center;
+    justify-content:space-between;
     width:100%;
     order:2;
-    position:relative;
-    min-height:42px;
     padding:0 10px;
+    box-sizing:border-box;
   }
-  /* Sync - absolute left corner */
   .hdr-sync{
-    position:absolute;
-    left:10px;
-    top:50%;
-    transform:translateY(-50%);
+    margin-right:auto;
   }
-  /* User - absolute right corner */
   .hdr-user-mobile{
-    position:absolute;
-    right:10px;
-    top:50%;
-    transform:translateY(-50%);
+    margin-left:auto;
     display:flex;
     flex-direction:column;
     align-items:flex-end;
     gap:3px;
   }
+  /* SAME size for name and branch */
   .mob-name,.mob-branch{
-    font-size:0.75rem;
+    font-size:0.74rem !important;
     font-weight:700;
     color:white;
     background:rgba(255,255,255,0.18);
     border-radius:16px;
-    padding:3px 10px;
-    max-width:140px;
+    padding:4px 10px;
+    max-width:145px;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
+    display:block;
+    line-height:1.2;
   }
   .hdr-spacer{display:none;}
   .hdr-inner > .hdr-user{display:none;}
@@ -371,7 +364,7 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
     <div class="hdr-bottom-row" style="display:none;">
       <!-- RIGHT (RTL): name + branch -->
       <div class="hdr-user-mobile">
-        <div class="mob-name" onclick="logout()">👤 <span id="userBadgeMobile">—</span></div>
+        <div class="mob-name" onclick="logout()" style="cursor:pointer;">👤 <span id="userBadgeMobile">—</span></div>
         <div class="mob-branch" id="branchBadgeHeaderMobile"></div>
       </div>
       <!-- LEFT (RTL): sync -->
