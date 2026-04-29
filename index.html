@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>כוננות ותגבור – </title>
+<title>כוננות ותגבורים – </title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -197,6 +197,48 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 /* Mobile */
 @media(max-width:600px){
   .hdr-inner{flex-direction:column;align-items:center;padding:8px 0 10px;gap:0;min-height:auto;}
+  .hdr-center{position:static;transform:none;order:1;margin:0 auto 10px;justify-content:center;pointer-events:auto;}
+  .hdr-text{font-size:0.82rem;}
+  .hdr-logo-wrap{padding:3px;}
+  .hdr-logo-img{width:42px;height:42px;}
+  .hdr-bottom-row{
+    display:table !important;
+    width:100%;
+    order:2;
+    padding:0 10px;
+    box-sizing:border-box;
+    table-layout:fixed;
+  }
+  .hdr-sync{
+    display:table-cell;
+    text-align:left;
+    vertical-align:middle;
+    width:50%;
+  }
+  .hdr-user-mobile{
+    display:table-cell;
+    text-align:right;
+    vertical-align:middle;
+    width:50%;
+  }
+  .mob-name,.mob-branch{
+    font-size:0.74rem;
+    font-weight:700;
+    color:white;
+    background:rgba(255,255,255,0.18);
+    border-radius:16px;
+    padding:4px 10px;
+    display:inline-block;
+    max-width:140px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    margin-bottom:2px;
+  }
+  .hdr-spacer{display:none;}
+  .hdr-inner > .hdr-user{display:none;}
+  .hdr-inner > .hdr-spacer{display:none;}
+}
   .hdr-center{position:static;transform:none;order:1;margin:0 auto 10px;justify-content:center;pointer-events:auto;}
   .hdr-text{font-size:0.8rem;}
   .hdr-logo-wrap{padding:3px;}
@@ -452,15 +494,18 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 
 <!-- ══ LOGIN ══ -->
 <div class="loading-overlay" id="loadingOverlay">
-  <div style="font-size:4rem;margin-bottom:16px;animation:logoPulse 1.5s ease-in-out infinite;">📋</div>
-  <div style="font-size:1.2rem;font-weight:800;color:white;letter-spacing:2px;margin-bottom:6px;">כוננות ותגבור</div>
-  <div style="font-size:0.85rem;color:rgba(255,255,255,0.7);">טוען נתונים<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
+  <div style="position:relative;margin-bottom:24px;">
+    <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:2.6rem;animation:logoFloat 3s ease-in-out infinite;backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,0.3);">📋</div>
+    <div style="position:absolute;inset:-8px;border-radius:50%;border:3px solid transparent;border-top-color:rgba(255,255,255,0.8);animation:spin 1.2s linear infinite;"></div>
+  </div>
+  <div style="font-size:1.4rem;font-weight:900;color:white;letter-spacing:2px;margin-bottom:6px;">כוננות ותגבורים</div>
+  <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);letter-spacing:1px;">טוען נתונים<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
 </div>
 
 <div class="login-screen" id="loginScreen" style="opacity:0;pointer-events:none;">
   <div class="login-card">
     <div style="font-size:3rem;margin-bottom:8px;">📋</div>
-    <h2 style="font-size:1.3rem;">כוננות ותגבור</h2>
+    <h2 style="font-size:1.3rem;">כוננות ותגבורים</h2>
     <p style="color:#94a3b8;font-size:0.85rem;margin-top:4px;">מערכת בקשות סידור עבודה</p>
     <p style="color:#94a3b8;font-size:0.8rem;margin-top:2px;">מערכת בקשות סידור עבודה</p>
     <div id="branchBadgeLogin"></div>
@@ -542,7 +587,7 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
       </div>
     </div>
     <div class="hdr-center">
-      <span class="hdr-text">📋 כוננות ותגבור</span>
+      <span class="hdr-text">📋 כוננות ותגבורים</span>
     </div>
     <div class="hdr-spacer"></div>
     <div class="hdr-bottom-row" style="display:none;" dir="ltr">
@@ -2043,7 +2088,7 @@ function renderDashboard(){
     <div class="dash-chip dc-purple"><span class="val">${totK2}</span><span class="lbl">ימי רק כונן 2</span></div>
     <div class="dash-chip dc-red"><span class="val">${totNo}</span><span class="lbl">ימי לא כונן</span></div>
     <div class="dash-chip dc-green"><span class="val">${totTg}</span><span class="lbl">ימי תגבור</span></div>
-    <div class="dash-chip" style="background:#f1f5f9;color:#475569;"><span class="val">${reqs.length}</span><span class="lbl">בקשות</span></div>
+
   `;
 
   // Per employee stats
@@ -2057,7 +2102,7 @@ function renderDashboard(){
       if(d.tigbur)tg++;
     }));
     return {name:emp.name,k1,k2,no,tg,total:k1+k2+no};
-  }).sort((a,b)=>b.total-a.total);
+  }).sort((a,b)=>a.name.localeCompare(b.name,'he'));
 
   const maxVal=Math.max(...empStats.map(e=>Math.max(e.k1,e.k2,e.tg)),1);
 
