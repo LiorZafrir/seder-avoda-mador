@@ -196,21 +196,21 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 .hdr-spacer{min-width:140px;}
 /* Mobile */
 @media(max-width:600px){
-  .hdr-inner{flex-direction:column;padding:6px 14px 8px;gap:0;min-height:auto;}
-  /* Row 1: logo centered */
-  .hdr-center{position:static;transform:none;order:1;margin:6px auto 4px;}
-  .hdr-text{font-size:0.82rem;letter-spacing:0.2px;}
+  .hdr-inner{flex-direction:column;padding:6px 14px 10px;gap:0;min-height:auto;}
+  /* Row 1: logo + title centered */
+  .hdr-center{position:static;transform:none;order:1;margin:6px auto 8px;justify-content:center;}
+  .hdr-text{font-size:0.8rem;letter-spacing:0.2px;}
   .hdr-logo-wrap{padding:3px;}
   .hdr-logo-img{width:40px;height:40px;}
-  /* Row 2: user right, sync left */
-  .hdr-bottom-row{display:flex;align-items:center;justify-content:space-between;width:100%;order:2;}
-  .hdr-user{flex-direction:column;align-items:flex-end;gap:2px;}
-  .hdr-sync{display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+  /* Row 2: sync LEFT, user RIGHT */
+  .hdr-bottom-row{display:flex !important;align-items:center;justify-content:space-between;width:100%;order:2;}
+  /* sync on left */
+  .hdr-sync{display:flex;align-items:center;gap:4px;}
+  /* user+branch on right */
+  .hdr-user-mobile{display:flex;align-items:center;gap:6px;}
   .hdr-spacer{display:none;}
-  /* Hide user+sync from original positions */
   .hdr-inner > .hdr-user{display:none;}
   .hdr-inner > .hdr-spacer{display:none;}
-  .hdr-bottom-row{display:flex !important;}
 }
 
 </style>
@@ -301,7 +301,7 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
 <!-- ══ HEADER ══ -->
 <header>
   <div class="hdr-inner">
-    <!-- User (right side in RTL) - desktop only -->
+    <!-- Desktop: user right -->
     <div class="hdr-user">
       <div class="user-badge" onclick="logout()" id="userBadge">👤 —</div>
       <div style="display:flex;gap:5px;align-items:center;">
@@ -309,7 +309,7 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
         <div class="branch-badge-header" id="branchBadgeHeader"></div>
       </div>
     </div>
-    <!-- Center: title + logo -->
+    <!-- Center: title + logo (desktop + mobile) -->
     <div class="hdr-center">
       <span class="hdr-text">כוננות ותגבור</span>
       <div class="hdr-logo-wrap">
@@ -317,16 +317,18 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
       </div>
       <span class="hdr-text">מדור מעבדות חבלה</span>
     </div>
-    <!-- Spacer (left side) - desktop only -->
+    <!-- Desktop: spacer left -->
     <div class="hdr-spacer"></div>
-    <!-- Mobile bottom row: user right, sync left -->
+    <!-- Mobile only bottom row -->
     <div class="hdr-bottom-row" style="display:none;">
+      <!-- LEFT: sync status -->
       <div class="hdr-sync">
-        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.7rem;">⏳</div>
+        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.75rem;">⏳ מתחבר...</div>
       </div>
-      <div class="hdr-user" style="flex-direction:column;align-items:flex-end;gap:2px;">
-        <div class="user-badge" onclick="logout()" style="font-size:0.75rem;padding:3px 9px;">👤 <span id="userBadgeMobile">—</span></div>
-        <div class="branch-badge-header" id="branchBadgeHeaderMobile" style="font-size:0.7rem;"></div>
+      <!-- RIGHT: user badge + branch -->
+      <div class="hdr-user-mobile">
+        <div class="branch-badge-header" id="branchBadgeHeaderMobile" style="font-size:0.75rem;"></div>
+        <div class="user-badge" onclick="logout()" style="font-size:0.75rem;padding:4px 10px;">👤 <span id="userBadgeMobile">—</span></div>
       </div>
     </div>
   </div>
