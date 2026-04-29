@@ -205,6 +205,40 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
     display:flex !important;
     flex-direction:row;
     align-items:center;
+    justify-content:space-between;
+    width:100%;
+    order:2;
+    padding:0 10px;
+    box-sizing:border-box;
+  }
+  .hdr-sync{display:flex;align-items:center;}
+  .hdr-user-mobile{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+  .mob-name,.mob-branch{
+    font-size:0.74rem;
+    font-weight:700;
+    color:white;
+    background:rgba(255,255,255,0.18);
+    border-radius:16px;
+    padding:4px 10px;
+    width:120px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    text-align:center;
+    display:block;
+  }
+  .hdr-spacer{display:none;}
+  .hdr-inner > .hdr-user{display:none;}
+  .hdr-inner > .hdr-spacer{display:none;}
+}
+  .hdr-center{position:static;transform:none;order:1;margin:0 auto 10px;justify-content:center;pointer-events:auto;}
+  .hdr-text{font-size:0.8rem;}
+  .hdr-logo-wrap{padding:3px;}
+  .hdr-logo-img{width:42px;height:42px;}
+  .hdr-bottom-row{
+    display:flex !important;
+    flex-direction:row;
+    align-items:center;
     width:100%;
     order:2;
     padding:0 10px;
@@ -434,16 +468,16 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
     </div>
     <!-- Desktop: spacer left -->
     <div class="hdr-spacer"></div>
-    <!-- Mobile only bottom row -->
-    <div class="hdr-bottom-row" style="display:none;">
-      <!-- RIGHT (RTL): name + branch -->
+    <!-- Mobile only bottom row - dir=ltr so left=left, right=right -->
+    <div class="hdr-bottom-row" style="display:none;" dir="ltr">
+      <!-- LEFT side (sync) -->
+      <div class="hdr-sync">
+        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.76rem;">⏳ מתחבר...</div>
+      </div>
+      <!-- RIGHT side (name + branch) -->
       <div class="hdr-user-mobile">
         <div class="mob-name" onclick="logout()" style="cursor:pointer;">👤 <span id="userBadgeMobile">—</span></div>
         <div class="mob-branch" id="branchBadgeHeaderMobile"></div>
-      </div>
-      <!-- LEFT (RTL): sync -->
-      <div class="hdr-sync">
-        <div id="syncStatusMobile" class="sync-status sync-loading" style="font-size:0.76rem;">⏳ מתחבר...</div>
       </div>
     </div>
   </div>
