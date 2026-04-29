@@ -201,6 +201,40 @@ header{background:linear-gradient(135deg,#0f1f5c,#1e40af,#2563eb);color:white;bo
   .hdr-text{font-size:0.8rem;}
   .hdr-logo-wrap{padding:3px;}
   .hdr-logo-img{width:42px;height:42px;}
+  .hdr-bottom-row{
+    display:flex !important;
+    flex-direction:row;
+    align-items:center;
+    width:100%;
+    order:2;
+    padding:0 10px;
+    box-sizing:border-box;
+  }
+  /* sync: order 1 = leftmost visually (in RTL = right side of DOM = left visual) */
+  .hdr-sync{order:2;flex:1;display:flex;justify-content:flex-end;}
+  .hdr-user-mobile{order:1;flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:3px;}
+  .mob-name,.mob-branch{
+    font-size:0.74rem;
+    font-weight:700;
+    color:white;
+    background:rgba(255,255,255,0.18);
+    border-radius:16px;
+    padding:4px 10px;
+    width:120px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    text-align:center;
+    display:block;
+  }
+  .hdr-spacer{display:none;}
+  .hdr-inner > .hdr-user{display:none;}
+  .hdr-inner > .hdr-spacer{display:none;}
+}
+  .hdr-center{position:static;transform:none;order:1;margin:0 auto 10px;justify-content:center;pointer-events:auto;}
+  .hdr-text{font-size:0.8rem;}
+  .hdr-logo-wrap{padding:3px;}
+  .hdr-logo-img{width:42px;height:42px;}
   /* 3-column grid: [sync] [empty] [user] */
   .hdr-bottom-row{
     display:grid !important;
