@@ -2294,26 +2294,53 @@ function showToast(msg,err=false){
 }
 
 // ── INIT ─────────────────────────────────────────────────
-function revealApp(){
+function revealApp(loadSuccess){
   const overlay=document.getElementById('loadingOverlay');
   const login=document.getElementById('loginScreen');
   if(overlay){overlay.classList.add('hidden');setTimeout(()=>overlay.style.display='none',400);}
-  if(!superAdmins.length){
+  // Only show setup if load was successful AND no admins exist
+  if(loadSuccess && !superAdmins.length){
     showSetupScreen();
-  } else {
+  } else if(loadSuccess){
     populateLoginBranches();
     if(login){login.style.opacity='1';login.style.pointerEvents='';}
+  } else {
+    // Load failed - show error message but still show login if we have cached data
+    if(superAdmins.length){
+      populateLoginBranches();
+      if(login){login.style.opacity='1';login.style.pointerEvents='';}
+    } else {
+      // No data at all - show error, not setup
+      if(overlay) overlay.innerHTML=`
+        <div style="text-align:center;padding:24px;">
+          <div style="font-size:3rem;margin-bottom:16px;">⚠️</div>
+          <div style="font-size:1.1rem;font-weight:800;color:white;margin-bottom:8px;">שגיאת חיבור</div>
+          <div style="font-size:0.85rem;color:rgba(255,255,255,0.7);margin-bottom:20px;">לא ניתן לטעון נתונים. בדוק חיבור לאינטרנט.</div>
+          <button onclick="location.reload()" style="background:white;color:#1e40af;border:none;border-radius:10px;padding:12px 28px;font-size:0.95rem;font-weight:700;cursor:pointer;">🔄 נסה שוב</button>
+        </div>`;
+      if(overlay){overlay.classList.remove('hidden');overlay.style.display='flex';overlay.style.opacity='1';}
+    }
   }
 }
 
 window.onload=async()=>{
-  // Timeout fallback - show login after 6s regardless
-  const fallback=setTimeout(()=>{revealApp();},6000);
+  let loadSuccess=false;
+  // Timeout fallback - only if truly stuck (10s)
+  const fallback=setTimeout(()=>{
+    if(!loadSuccess) revealApp(false);
+  },10000);
   try{
     await loadFromSheet();
-  }catch(e){}
+    loadSuccess=true;
+  }catch(e){
+    loadSuccess=false;
+  }
   clearTimeout(fallback);
-  revealApp();
+  if(!loadSuccess && !superAdmins.length){
+    revealApp(false);
+  } else {
+    revealApp(loadSuccess);
+  }
 };
 </script>
 </body>
