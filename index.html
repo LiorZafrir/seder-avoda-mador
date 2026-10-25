@@ -1144,7 +1144,7 @@ async function submitRequest(){
   // notify manager if enabled
   if(waSettings.notifyManager && waSettings.managerPhone){
     const s=new Date(ws),e=new Date(ws);e.setDate(e.getDate()+6);
-    const msg=`✅ ${currentUser.name} הגיש/ה בקשה לשבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}`;
+    const msg=`✅ ${currentUser.name} הגיש/ה בקשה לשבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}\n\nלינק לאתר: ${teamLink()}`;
     const phone=waSettings.managerPhone.replace(/[^0-9]/g,'').replace(/^0/,'972');
     const waUrl=`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
     // Open WhatsApp automatically
@@ -2517,7 +2517,7 @@ function sendManagersSummary(){
     const {missing,mgrs}=reminderStats(t.id);
     return `*${t.name}*${mgrs.length?` (${mgrs.join(', ')})`:''}: `+(missing.length?`טרם הגישו – ${missing.join(', ')}`:'כולם הגישו ✅');
   });
-  const msg=`תזכורת לראשי השלוחות – הגשת בקשות לשבוע ${weekText()}\n\n${lines.join('\n')}\n\nאנא דאגו שכל העובדים בשלוחה יגישו.`;
+  const msg=`תזכורת לראשי השלוחות – הגשת בקשות לשבוע ${weekText()}\n\n${lines.join('\n')}\n\nאנא דאגו שכל העובדים בשלוחה יגישו.\n\nלינק לאתר: ${teamLink(null)}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
