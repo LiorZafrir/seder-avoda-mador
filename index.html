@@ -340,6 +340,7 @@ header h1{font-size:1.3rem;font-weight:700}
       <button class="refresh-btn" onclick="loadAllTeams()">🔄 רענן</button>
       <select id="saWeek" onchange="renderSuper()"></select>
       <div class="export-group">
+        <button class="wa-btn" style="padding:7px 12px;font-size:0.8rem;" onclick="openManagerReminders()">📲 תזכורות לראשי השלוחות</button>
         <button class="export-btn master-copy" onclick="copyMasterAll()">📋 העתק הכל לטבלה המתכללת</button>
         <button class="export-btn excel" onclick="exportMasterAllExcel()">📊 Excel מאוחד</button>
       </div>
@@ -1029,7 +1030,6 @@ function buildGrid(){
         <div class="btn-group">
           <button class="sb" onclick="setK(${i},1,this)">זמין</button>
           <button class="sb" onclick="setK(${i},'no',this)">לא זמין</button>
-          <button class="sb" onclick="setK(${i},'hs',this)">ח&quot;ש</button>
         </div>
       </div>
       <div class="shift-section" style="margin-top:6px;">
@@ -1096,7 +1096,7 @@ function loadRequestIntoForm(req){
       // konenut 1 or 2 = זמין (btn 0), 'no' = לא זמין (btn 1)
       if(d.konenut===1||d.konenut===2)btns[0].classList.add('s1');
       else if(d.konenut==='no')btns[1].classList.add('sno');
-      else if(d.konenut==='hs')btns[2]?.classList.add('shs');
+      else if(d.konenut==='hs'){btns[1].classList.add('sno');fd[i].konenut='no'}
     }
     // Update tigbur button
     const tBtn=card.querySelector(`#tg${i}`);
@@ -1217,7 +1217,7 @@ function buildWeekTableHTML(ws,weekReqs,showExcelBtn=true){
     html+=`<tr><td class="person-cell" rowspan="2">${emp.name}</td><td class="type-cell">כוננות</td>`;
     dates.forEach((_,i)=>{
       const k=req?.days[i]?.konenut;
-      html+=`<td>${(k===1||k===2)?'<span class="badge b1">זמין</span>':k==='no'?'<span class="badge bno">לא זמין</span>':k==='hs'?'<span class="badge" style="background:#fef3c7;color:#92400e;">ח&quot;ש</span>':'<span class="badge be">–</span>'}</td>`;
+      html+=`<td>${(k===1||k===2)?'<span class="badge b1">זמין</span>':(k==='no'||k==='hs')?'<span class="badge bno">לא זמין</span>':'<span class="badge be">–</span>'}</td>`;
     });
     html+=`<td rowspan="2" style="font-size:0.76rem;color:#64748b;max-width:100px;">${req?.notes||'–'}</td></tr>`;
     html+=`<tr><td class="type-cell">תגבור</td>`;
@@ -1429,17 +1429,15 @@ function unlockRequest(){
 function renderSummaryTo(elId,fil){
   const k1=fil.reduce((s,r)=>s+r.days.filter(d=>d.konenut===1||d.konenut===2).length,0);
   const k2=0;
-  const khs=fil.reduce((s,r)=>s+r.days.filter(d=>d.konenut==='hs').length,0);
   const tg=fil.reduce((s,r)=>s+r.days.filter(d=>d.tigbur).length,0);
   document.getElementById(elId).innerHTML=`
     <div class="chip"><span class="num">${fil.length}</span><span class="lbl">בקשות</span></div>
     <div class="chip"><span class="num" style="color:#1d4ed8">${k1}</span><span class="lbl">ימי זמין</span></div>
-    <div class="chip"><span class="num" style="color:#92400e">${khs}</span><span class="lbl">ימי ח&quot;ש</span></div>
     <div class="chip"><span class="num" style="color:#15803d">${tg}</span><span class="lbl">ימי תגבור</span></div>`;
 }
 
 // ── EXCEL EXPORT ──────────────────────────────────────────
-function kLabel(k){return (k===1||k===2)?'זמין':k==='no'?'לא זמין':k==='hs'?'ח"ש':''}
+function kLabel(k){return (k===1||k===2)?'זמין':(k==='no'||k==='hs')?'לא זמין':''}
 
 function buildXlsxForWeek(weekStart){
   const wb=XLSX.utils.book_new();
@@ -2065,7 +2063,8 @@ function loadMgrEditGrid(){
   for(let i=0;i<7;i++){
     const [y,m,d]=ws.split('-').map(Number);
     const day=new Date(y,m-1,d+i);
-    const k=req?.days[i]?.konenut||null;
+    let k=req?.days[i]?.konenut||null;
+    if(k==='hs')k='no'; // ח"ש removed – old records count as לא זמין
     const t=req?.days[i]?.tigbur||false;
     mgrFd[i]={konenut:k,tigbur:t};
     const c=document.createElement('div');
@@ -2076,7 +2075,6 @@ function loadMgrEditGrid(){
         <div class="btn-group">
           <button class="sb${k===1?' s1':''}" onclick="mgrSetK(${i},1,this)">זמין</button>
           <button class="sb${k==='no'?' sno':''}" onclick="mgrSetK(${i},'no',this)">לא זמין</button>
-          <button class="sb${k==='hs'?' shs':''}" onclick="mgrSetK(${i},'hs',this)">ח&quot;ש</button>
         </div>
       </div>
       <div class="shift-section" style="margin-top:5px;">
@@ -2472,7 +2470,58 @@ function saSavePhone(id){
   mutateTeams([id],f=>{f[id].waSettings.managerPhone=phone}).then(ok=>ok&&showToast('✅ הטלפון נשמר'));
 }
 
-function saRemindManager(id){
+// Reminder center: one WhatsApp per branch head, or one summary for a managers' group
+function reminderStats(id){
+  const data=allData[id]||normData({});
+  const ws=saWeek();
+  const subs=new Set(data.requests.filter(r=>r.weekStart===ws).map(r=>r.name));
+  return {data,missing:data.employees.filter(x=>!subs.has(x.name)).map(x=>x.name),mgrs:data.managers.map(m=>m.name)};
+}
+function weekText(){
+  const [y,m,d]=saWeek().split('-').map(Number);
+  const s=new Date(y,m-1,d),e=new Date(y,m-1,d+6);
+  return `${fmtD(s)}–${fmtD(e)}/${e.getFullYear()}`;
+}
+function openManagerReminders(){
+  const rows=TEAMS.map(t=>{
+    const {data,missing,mgrs}=reminderStats(t.id);
+    return `<div style="border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:8px;text-align:right;">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div><b>${escHtml(t.name)}</b> <span style="font-size:0.78rem;color:#64748b;">· ${mgrs.length?escHtml(mgrs.join(', ')):'אין ראש שלוחה'}</span></div>
+        <span class="sa-pill ${missing.length?'wait':'ok'}">${missing.length?`${missing.length} טרם הגישו`:'כולם הגישו'}</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+        <input type="tel" id="remPhone_${t.id}" value="${escHtml(data.waSettings.managerPhone||'')}" placeholder="טלפון ראש השלוחה" style="flex:1;min-width:0;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.86rem;font-family:inherit;">
+        <button class="wa-btn" id="remBtn_${t.id}" style="padding:7px 12px;font-size:0.8rem;" onclick="sendManagerReminder('${t.id}')">שלח</button>
+      </div>
+    </div>`;
+  }).join('');
+  openModal('📲 תזכורות לראשי השלוחות',`שבוע ${weekText()} · כל לחיצה פותחת WhatsApp לראש השלוחה עם רשימת מי שטרם הגיש.`,
+    `<div style="max-height:55vh;overflow-y:auto;margin-top:10px;">${rows}</div>`,
+    ()=>{sendManagersSummary();closeModal()},'📋 הודעה מרוכזת לקבוצה','btn-primary');
+}
+async function sendManagerReminder(id){
+  const input=document.getElementById('remPhone_'+id);
+  const phone=input?.value.trim()||'';
+  // open WhatsApp first (popup must come straight from the click), then remember the phone
+  saRemindManager(id,phone);
+  const btn=document.getElementById('remBtn_'+id);
+  if(btn){btn.textContent='✓ נשלח';btn.style.background='#64748b'}
+  if(phone!==(allData[id]?.waSettings.managerPhone||'')){
+    const ok=await mutateTeams([id],f=>{f[id].waSettings.managerPhone=phone});
+    if(ok){openManagerReminders();const b=document.getElementById('remBtn_'+id);if(b){b.textContent='✓ נשלח';b.style.background='#64748b'}}
+  }
+}
+function sendManagersSummary(){
+  const lines=TEAMS.map(t=>{
+    const {missing,mgrs}=reminderStats(t.id);
+    return `*${t.name}*${mgrs.length?` (${mgrs.join(', ')})`:''}: `+(missing.length?`טרם הגישו – ${missing.join(', ')}`:'כולם הגישו ✅');
+  });
+  const msg=`תזכורת לראשי השלוחות – הגשת בקשות לשבוע ${weekText()}\n\n${lines.join('\n')}\n\nאנא דאגו שכל העובדים בשלוחה יגישו.`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+}
+
+function saRemindManager(id,phoneOverride){
   const t=TEAMS.find(x=>x.id===id),data=allData[id];
   const ws=saWeek();
   const [y,m,d]=ws.split('-').map(Number);
@@ -2482,7 +2531,7 @@ function saRemindManager(id){
   const mgr=data.managers.map(x=>x.name).join(', ');
   const msg=`${mgr?`היי ${mgr}, `:''}תזכורת – הגשת בקשות לשבוע ${fmtD(s)}–${fmtD(e)}/${e.getFullYear()} בשלוחת ${t.name}.\n\n`+
     (missing.length?`טרם הגישו (${missing.length}): ${missing.join(', ')}`:'כולם הגישו ✅')+`\n\nלינק לשלוחה: ${teamLink(t)}`;
-  const phone=(data.waSettings.managerPhone||'').replace(/[^0-9]/g,'').replace(/^0/,'972');
+  const phone=(phoneOverride??data.waSettings.managerPhone??'').replace(/[^0-9]/g,'').replace(/^0/,'972');
   window.open(phone?`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
