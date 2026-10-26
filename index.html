@@ -900,8 +900,18 @@ function enterApp(user){
 let syncTimer=null;
 
 // ── SERVER ────────────────────────────────────────────────
+// A request to Google that never answers (weak signal, Apps Script cold start) used to leave
+// the loading screen up forever. Now: give up after a timeout, retry once, then report.
+async function fetchWithTimeout(url,opts,ms){
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),ms);
+  try{return await fetch(url,{...opts,signal:ctl.signal})}
+  finally{clearTimeout(timer)}
+}
 async function fetchTeamData(url,id){
-  const res=await fetch(`${url}?team=${encodeURIComponent(id)}&t=${Date.now()}`,{redirect:'follow',mode:'cors',cache:'no-store'});
+  const go=()=>fetchWithTimeout(`${url}?team=${encodeURIComponent(id)}&t=${Date.now()}`,{redirect:'follow',mode:'cors',cache:'no-store'},15000);
+  let res;
+  try{res=await go()}catch(e){res=await go()}
   const text=await res.text();
   const i=text.indexOf('{');
   const data=JSON.parse(i>=0?text.slice(i):'{}');
@@ -910,8 +920,8 @@ async function fetchTeamData(url,id){
 }
 async function postTeamData(url,id,data){
   writeSeq++;
-  await fetch(`${url}?team=${encodeURIComponent(id)}`,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify(data),redirect:'follow',mode:'cors'});
+  await fetchWithTimeout(`${url}?team=${encodeURIComponent(id)}`,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(data),redirect:'follow',mode:'cors'},30000);
 }
 function applyGlobal(){
   // names + order from the global config; unknown/missing ids fall back to the defaults
@@ -968,7 +978,7 @@ async function selectTeam(id){
   setTeamLabels(t);
   const ok=await withOverlay(loadFromSheet);
   if(!currentTeam||currentTeam.id!==id)return;
-  if(!ok){currentTeam=null;showTeamStep();return}
+  if(!ok){currentTeam=null;showTeamStep();showToast('⚠️ השרת לא הגיב – בדוק קליטה ונסה שוב',true);return}
   if(employees.length===0){showSetupScreen();return}
   document.getElementById('teamStep').style.display='none';
   document.getElementById('superStep').style.display='none';
