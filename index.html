@@ -752,13 +752,18 @@ function getNextWeekStart(){
 }
 
 // ── SYNC ─────────────────────────────────────────────────
+// writeSeq/writing: a background refresh that started before (or during) a save
+// returns the pre-save data – it must not replace what was just saved.
+let writeSeq=0, writing=0;
 async function loadFromSheet(){
   if(!currentTeam)return false;
-  const teamAtStart=currentTeam.id;
+  if(writing)return true;
+  const teamAtStart=currentTeam.id, seqAtStart=writeSeq;
   setSyncStatus('loading');
   try{
     const data=await fetchTeamData(currentTeam.url,currentTeam.id);
     if(!currentTeam||currentTeam.id!==teamAtStart)return false; // team switched mid-load
+    if(writing||writeSeq!==seqAtStart){setSyncStatus('ok');return true}
     employees=data.employees||[];
     managers=data.managers||[];
     requests=data.requests||[];
@@ -785,16 +790,43 @@ async function loadFromSheet(){
   }
 }
 
+// Requests and locks change only through commitChange() (fresh read → change → write),
+// so a general save keeps the server's copy of them instead of this device's possibly stale one.
 async function saveToSheet(){
   if(!currentTeam)return;
   setSyncStatus('loading');
+  writing++;
   try{
+    const fresh=await fetchTeamData(currentTeam.url,currentTeam.id);
+    requests=fresh.requests||[];
+    lockedRequests=fresh.lockedRequests||{};
     await postTeamData(currentTeam.url,currentTeam.id,{employees,managers,requests,lockedRequests,waSettings,templates});
     setSyncStatus('ok');
   }catch(e){
     setSyncStatus('error');
     showToast('⚠️ שגיאה בשמירה',true);
-  }
+  }finally{writing--;writeSeq++}
+}
+
+// Read the latest data, apply one change to it, write it back – so changes made meanwhile
+// on another phone (an unlock, another employee's submission) are never overwritten.
+async function commitChange(fn){
+  if(!currentTeam)return false;
+  setSyncStatus('loading');
+  writing++;
+  try{
+    const d=await fetchTeamData(currentTeam.url,currentTeam.id);
+    const st={employees:d.employees||[],managers:d.managers||[],requests:d.requests||[],lockedRequests:d.lockedRequests||{},
+      waSettings:d.waSettings||waSettings,templates:d.templates||{}};
+    const err=fn(st);
+    if(err){setSyncStatus('ok');showToast(err,true);return false}
+    await postTeamData(currentTeam.url,currentTeam.id,st);
+    ({employees,managers,requests,lockedRequests,waSettings,templates}=st);
+    setSyncStatus('ok');
+    return true;
+  }catch(e){
+    setSyncStatus('error');showToast('⚠️ שגיאה בשמירה – נסה שוב',true);return false;
+  }finally{writing--;writeSeq++}
 }
 
 function setSyncStatus(s){
@@ -877,6 +909,7 @@ async function fetchTeamData(url,id){
   return data;
 }
 async function postTeamData(url,id,data){
+  writeSeq++;
   await fetch(`${url}?team=${encodeURIComponent(id)}`,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify(data),redirect:'follow',mode:'cors'});
 }
@@ -981,7 +1014,7 @@ function buildWeekSelect(){
   sel.innerHTML=opts.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
   // default = next week
   sel.value=getNextWeekStart();
-  sel.onchange=()=>{buildGrid();checkSubmittedStatus();updateWeekSummaryLabel()};
+  sel.onchange=()=>{formLoadedKey=null;buildGrid();checkSubmittedStatus();updateWeekSummaryLabel()};
   buildGrid();
   // auto-apply template if exists and no submission yet
   if(currentUser && templates[currentUser.name]){
@@ -1057,6 +1090,7 @@ function togT(i,btn){
   btn.textContent=fd[i].tigbur?'✓ אפשרי':'אפשרי';
 }
 
+let formLoadedKey=null;
 function checkSubmittedStatus(){
   if(!currentUser)return;
   const ws=document.getElementById('weekSelect')?.value;
@@ -1067,6 +1101,7 @@ function checkSubmittedStatus(){
   const banner=document.getElementById('submittedBanner');
   const formContent=document.getElementById('formContent');
   if(existingReq&&isLocked){
+    formLoadedKey=null;
     // Locked - show banner
     banner.style.display='block';
     formContent.style.display='none';
@@ -1076,8 +1111,10 @@ function checkSubmittedStatus(){
     // Unlocked - show form
     banner.style.display='none';
     formContent.style.display='';
-    // If there's an existing (unlocked) request, pre-fill the form with it
-    if(existingReq && !isLocked){
+    // Pre-fill with the existing (unlocked) request ONCE per week – the 30s refresh
+    // must not wipe changes the employee is in the middle of making
+    if(existingReq && !isLocked && formLoadedKey!==lockKey){
+      formLoadedKey=lockKey;
       loadRequestIntoForm(existingReq);
     }
   }
@@ -1128,15 +1165,21 @@ async function submitRequest(){
   }
   const btn=document.getElementById('submitBtn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span> שומר...';
-  requests=requests.filter(r=>!(r.name===currentUser.name&&r.weekStart===ws));
-  requests.push({id:Date.now(),name:currentUser.name,weekStart:ws,
+  const name=currentUser.name;
+  const newReq={id:Date.now(),name,weekStart:ws,
     days:Array.from({length:7},(_,i)=>({day:i,konenut:fd[i].konenut,tigbur:fd[i].tigbur})),
     notes:document.getElementById('notes').value,
-    submittedAt:new Date().toISOString()});
-  // lock it
-  lockedRequests[`${currentUser.name}_${ws}`]=true;
-  await saveToSheet();
+    submittedAt:new Date().toISOString()};
+  const ok=await commitChange(st=>{
+    if(st.lockedRequests[`${name}_${ws}`]&&st.requests.some(r=>r.name===name&&r.weekStart===ws))
+      return '🔒 הבקשה לשבוע זה נעולה – פנה למנהל';
+    st.requests=st.requests.filter(r=>!(r.name===name&&r.weekStart===ws));
+    st.requests.push(newReq);
+    st.lockedRequests[`${name}_${ws}`]=true;
+  });
   btn.disabled=false;btn.innerHTML='<span>✅</span><span>הגש בקשה</span>';
+  if(!ok){checkSubmittedStatus();return}
+  formLoadedKey=null;
   showToast('✅ הבקשה נשמרה!');
   checkSubmittedStatus();
   buildFilterYears();
@@ -1419,10 +1462,12 @@ function unlockRequest(){
     .filter(k=>k.startsWith(emp+'_'))
     .sort().reverse();
   if(!lockedKeys.length){showToast('❗ אין בקשות נעולות לעובד זה',true);return}
-  delete lockedRequests[lockedKeys[0]];
-  saveToSheet();
-  buildUnlockSelects();
-  showToast(`🔓 הבקשה האחרונה של ${emp} בוטלה הנעילה`);
+  const key=lockedKeys[0];
+  commitChange(st=>{delete st.lockedRequests[key]}).then(ok=>{
+    if(!ok)return;
+    buildUnlockSelects();
+    showToast(`🔓 הבקשה האחרונה של ${emp} בוטלה הנעילה`);
+  });
 }
 
 // ── SUMMARY ───────────────────────────────────────────────
@@ -2107,20 +2152,16 @@ async function saveMgrEdit(){
   for(let i=0;i<7;i++){if(mgrFd[i].konenut===null)missing.push(DAYS[i])}
   if(missing.length){showToast('❗ חסרה בחירה ל: '+missing.join(', '),true);return}
   // Update or create request
-  const idx=requests.findIndex(r=>r.name===empName&&r.weekStart===ws);
-  const newReq={
-    id:idx>=0?requests[idx].id:Date.now(),
-    name:empName,weekStart:ws,
-    days:Array.from({length:7},(_,i)=>({day:i,konenut:mgrFd[i].konenut,tigbur:mgrFd[i].tigbur})),
-    notes:document.getElementById('mgrEditNotes').value,
-    submittedAt:idx>=0?requests[idx].submittedAt:new Date().toISOString(),
-    editedByManager:true
-  };
-  if(idx>=0)requests[idx]=newReq;
-  else requests.push(newReq);
-  // Keep locked
-  lockedRequests[`${empName}_${ws}`]=true;
-  await saveToSheet();
+  const days=Array.from({length:7},(_,i)=>({day:i,konenut:mgrFd[i].konenut,tigbur:mgrFd[i].tigbur}));
+  const notes=document.getElementById('mgrEditNotes').value;
+  const ok=await commitChange(st=>{
+    const idx=st.requests.findIndex(r=>r.name===empName&&r.weekStart===ws);
+    const newReq={id:idx>=0?st.requests[idx].id:Date.now(),name:empName,weekStart:ws,days,notes,
+      submittedAt:idx>=0?st.requests[idx].submittedAt:new Date().toISOString(),editedByManager:true};
+    if(idx>=0)st.requests[idx]=newReq; else st.requests.push(newReq);
+    st.lockedRequests[`${empName}_${ws}`]=true; // keep locked
+  });
+  if(!ok)return;
   showToast(`✅ הבקשה של ${empName} עודכנה`);
   loadMgrEditGrid();
 }
